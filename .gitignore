@@ -1,0 +1,26 @@
+# dependencies
+/node_modules
+
+# Next.js
+/.next/
+/out/
+
+# testing
+/coverage/
+
+# local environment variables
+.env
+.env.local
+.env.*.local
+
+# deployment and tooling
+.idea/
+.pnpm-store/
+.railway/
+.vercel/
+
+# system and editor files
+.DS_Store
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
