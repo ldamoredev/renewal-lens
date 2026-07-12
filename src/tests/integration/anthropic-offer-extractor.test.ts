@@ -8,7 +8,7 @@ import {
   type ExtractionModelClient,
   type ExtractionModelResponse,
 } from "@/features/analyze-offer/infrastructure/anthropic-offer-extractor";
-import streamlyRaw from "@/tests/fixtures/extractions/streamly-trial.raw.json";
+import streamlyRaw from "@/features/analyze-offer/infrastructure/fixtures/streamly-trial.raw.json";
 
 const screenshot: ScreenshotInput = {
   base64Data: "aGVsbG8=",
@@ -188,5 +188,27 @@ describe("EXTRACTION_OUTPUT_JSON_SCHEMA", () => {
     expect(EXTRACTION_OUTPUT_JSON_SCHEMA.type).toBe("object");
     expect(EXTRACTION_OUTPUT_JSON_SCHEMA.additionalProperties).toBe(false);
     expect(EXTRACTION_OUTPUT_JSON_SCHEMA.required).toContain("billingPhases");
+  });
+
+  it("keeps Phase 5 fields union-free where the live schema budget requires it", () => {
+    const rootProperties = EXTRACTION_OUTPUT_JSON_SCHEMA.properties as Record<
+      string,
+      unknown
+    >;
+    const minimumCommitment = rootProperties.minimumCommitment as Record<
+      string,
+      unknown
+    >;
+    const additionalFees = rootProperties.additionalFees as Record<
+      string,
+      unknown
+    >;
+    const feeItems = additionalFees.items as Record<string, unknown>;
+    const feeProperties = feeItems.properties as Record<string, unknown>;
+    const feeFrequency = feeProperties.frequency as Record<string, unknown>;
+
+    expect(minimumCommitment.anyOf).toBeUndefined();
+    expect(feeFrequency.anyOf).toBeUndefined();
+    expect(feeProperties.billingPeriod).toBeUndefined();
   });
 });

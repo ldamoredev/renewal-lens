@@ -10,13 +10,14 @@ import { BrandMark } from "@/components/ui/brand-mark";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { UploadPanel } from "@/components/upload/upload-panel";
 import {
+  analysisApiResponseSchema,
+  type PricingResultOffer,
+} from "@/features/analyze-offer/application/analysis-response";
+import {
   defaultMockOffer,
   mockOffers,
 } from "@/features/analyze-offer/presentation/mock-offers";
-import type {
-  ExampleId,
-  MockPricingOffer,
-} from "@/features/analyze-offer/presentation/mock-offers";
+import type { ExampleId } from "@/features/analyze-offer/presentation/mock-offers";
 
 const previewStates: readonly { state: AnalysisState; label: string }[] = [
   { state: "idle", label: "Idle" },
@@ -24,6 +25,7 @@ const previewStates: readonly { state: AnalysisState; label: string }[] = [
   { state: "success", label: "Success" },
   { state: "partial", label: "Partial" },
   { state: "ambiguous", label: "Ambiguous" },
+  { state: "insufficient", label: "Insufficient" },
   { state: "error", label: "Error" },
   { state: "rate_limited", label: "Rate limited" },
 ];
@@ -31,58 +33,107 @@ const previewStates: readonly { state: AnalysisState; label: string }[] = [
 export function RenewalLensApp() {
   const [state, setState] = useState<AnalysisState>("idle");
   const [activeOffer, setActiveOffer] =
-    useState<MockPricingOffer>(defaultMockOffer);
+    useState<PricingResultOffer>(defaultMockOffer);
   const [activeExampleId, setActiveExampleId] = useState<ExampleId | null>(
     null,
   );
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
 
   useEffect(
     () => () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      requestRef.current?.abort();
     },
     [],
   );
 
-  function runMockAnalysis(offer: MockPricingOffer, isExample: boolean) {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setActiveOffer(offer);
-    setActiveExampleId(isExample ? offer.id : null);
+  async function runAnalysis(
+    input: RequestInfo | URL,
+    init: RequestInit | undefined,
+    exampleId: ExampleId | null,
+  ) {
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
+    setActiveExampleId(exampleId);
+    setErrorDetail(null);
     setState("loading");
-    timerRef.current = setTimeout(
-      () => {
-        setState("success");
+    try {
+      const [response] = await Promise.all([
+        fetch(input, { ...init, signal: controller.signal }),
+        exampleId === null
+          ? Promise.resolve()
+          : new Promise((resolve) => setTimeout(resolve, 520)),
+      ]);
+      const parsed = analysisApiResponseSchema.safeParse(await response.json());
+      if (requestRef.current !== controller) return;
+      if (!parsed.success) {
+        setErrorDetail(
+          "The server returned an unexpected response. Please try again.",
+        );
+        setState("error");
+        return;
+      }
+      if (parsed.data.ok) {
+        setActiveOffer(parsed.data.offer);
+        setState(parsed.data.state);
         resultRef.current?.scrollIntoView({
           behavior: "smooth",
           block: "center",
         });
-      },
-      isExample ? 720 : 1_050,
-    );
+        return;
+      }
+      const errorMessages = {
+        invalid_file: "Choose one PNG, JPG or WebP screenshot.",
+        file_too_large: "The screenshot is larger than the 10 MB upload limit.",
+        unsupported_image:
+          "The file could not be decoded as a valid PNG, JPG or WebP image.",
+        analysis_inconclusive:
+          "The visible billing terms could not be confirmed from this screenshot.",
+        rate_limited: null,
+        timeout:
+          "The analysis took too long. Nothing was stored; please try again.",
+        service_unavailable:
+          "Live analysis is temporarily unavailable. The verified examples still work.",
+      } as const;
+      setErrorDetail(errorMessages[parsed.data.error]);
+      setState(parsed.data.error === "rate_limited" ? "rate_limited" : "error");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      if (requestRef.current === controller) {
+        setErrorDetail(
+          "The request could not be completed. Please check your connection and try again.",
+        );
+        setState("error");
+      }
+    }
   }
 
   function handleExampleSelect(id: ExampleId) {
-    const offer = mockOffers.find((item) => item.id === id);
-    if (offer) runMockAnalysis(offer, true);
+    void runAnalysis(`/api/examples/${id}`, undefined, id);
   }
-  function acceptMockFile(file: File | undefined) {
+  function acceptFile(file: File | undefined) {
     if (!file) return;
     setFileName(file.name);
-    runMockAnalysis(defaultMockOffer, false);
+    const formData = new FormData();
+    formData.set("image", file);
+    void runAnalysis("/api/analyze", { method: "POST", body: formData }, null);
   }
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    acceptMockFile(event.target.files?.[0]);
+    acceptFile(event.target.files?.[0]);
+    event.target.value = "";
   }
   function handleDrop(event: DragEvent<HTMLLabelElement>) {
     event.preventDefault();
     setIsDragging(false);
-    acceptMockFile(event.dataTransfer.files[0]);
+    acceptFile(event.dataTransfer.files[0]);
   }
   function handlePreviewState(nextState: AnalysisState) {
-    if (timerRef.current) clearTimeout(timerRef.current);
+    requestRef.current?.abort();
+    setErrorDetail(null);
     setActiveOffer(defaultMockOffer);
     setActiveExampleId(nextState === "idle" ? null : defaultMockOffer.id);
     setState(nextState);
@@ -179,6 +230,7 @@ export function RenewalLensApp() {
               state={state}
               offer={activeOffer}
               isExample={activeExampleId !== null}
+              errorDetail={errorDetail}
             />
           </div>
         </section>

@@ -4,6 +4,7 @@ export type AnalysisState =
   | "success"
   | "partial"
   | "ambiguous"
+  | "insufficient"
   | "error"
   | "rate_limited";
 
@@ -25,6 +26,12 @@ const stateContent: Record<
     detail:
       "The offer shows a monthly equivalent, but the screenshot does not confirm when the payment is charged.",
   },
+  insufficient: {
+    label: "Screenshot incomplete",
+    title: "The pricing terms are not visible enough.",
+    detail:
+      "Upload a wider screenshot that includes the price, billing cadence, and complete offer footnotes.",
+  },
   error: {
     label: "Analysis unavailable",
     title: "We could not process this screenshot.",
@@ -39,7 +46,13 @@ const stateContent: Record<
   },
 };
 
-export function AnalysisStateNotice({ state }: { state: NoticeState }) {
+export function AnalysisStateNotice({
+  state,
+  detail,
+}: {
+  state: NoticeState;
+  detail?: string | null;
+}) {
   const content = stateContent[state];
   return (
     <div className={`state-notice state-notice--${state}`} role="status">
@@ -48,14 +61,16 @@ export function AnalysisStateNotice({ state }: { state: NoticeState }) {
           ? "½"
           : state === "ambiguous"
             ? "?"
-            : state === "error"
-              ? "!"
-              : "···"}
+            : state === "insufficient"
+              ? "↗"
+              : state === "error"
+                ? "!"
+                : "···"}
       </span>
       <div>
         <span className="state-notice__label">{content.label}</span>
         <h3>{content.title}</h3>
-        <p>{content.detail}</p>
+        <p>{detail ?? content.detail}</p>
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ The project is being built in nine deliberately bounded phases over a two-day MV
 
 ## Current state
 
-Phases 0 through 3 are complete. The responsive product experience, fictional example screenshots, mock analysis flow, uncertainty states, and dual-theme glass visual system are ready. The Anthropic extraction contract exists (versioned domain types with textual evidence, a strict Zod boundary, deterministic minor-unit money conversion, and a server-side adapter with one controlled structural retry — see [`docs/extraction-contract.md`](./docs/extraction-contract.md)), and the pure pricing engine now computes due today, the 365-day first-year cost, the charge schedule, and the half-up effective monthly cost with integer arithmetic only, abstaining with machine-readable blockers when data is missing (see [`docs/pricing-engine.md`](./docs/pricing-engine.md)). The UI still uses presentation fixtures only; wiring extraction and pricing into the real upload flow is Phase 4.
+Phases 0 through 5 are complete. Visitor uploads follow a transient server pipeline: validated PNG/JPEG/WebP input, Sharp resize to a 1,568 px long side, Anthropic extraction, deterministic pricing, and an evidence-backed UI response. Each displayed billing fact can expose its textual evidence; missing and ambiguous terms remain explicit. The three examples are served from verified local extraction fixtures and never call Anthropic. No screenshot is persisted or logged.
 
 The three built-in examples are fictional and deterministic:
 
@@ -61,6 +61,8 @@ Money uses integer minor units. Missing information remains absent, ambiguous ev
 See [`docs/architecture.md`](./docs/architecture.md) for boundaries, deployment decisions, privacy constraints, and the first-year cost convention reserved for Phase 3.
 
 See [`docs/design-system.md`](./docs/design-system.md) for theme tokens, typography, glass rules, and toggle behavior.
+
+See [`docs/extraction-contract.md`](./docs/extraction-contract.md), [`docs/pricing-engine.md`](./docs/pricing-engine.md), [`docs/upload-pipeline.md`](./docs/upload-pipeline.md), and [`docs/result-presentation.md`](./docs/result-presentation.md) for the implemented analysis path.
 
 ## Deployment direction
 

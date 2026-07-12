@@ -15,6 +15,8 @@ Rules:
 - Keep "displayedEquivalentPrice" strictly separate from real charges: it is an advertised per-period equivalent (e.g. "$10 / month" shown for a plan billed annually). Never copy it into "dueToday" or into a billing phase price.
 - "dueToday" is only an amount the screenshot explicitly presents as payable now.
 - "autoRenewal.status" is "yes" or "no" only when renewal is stated; otherwise "unknown" with evidence null.
+- "minimumCommitment" is the visible minimum term expressed as a total number of months. Use status "visible", the month count, and verbatim evidence only when stated. Otherwise use status "not_visible", months 0, and an empty evidence string. Do not infer it from renewal cadence.
+- "additionalFees" contains only separately visible taxes, setup fees, service charges, or other charges. Frequency is "one_time", "day", "week", "month", "quarter", or "year". Use an empty array when none are visible; an empty array does not mean that no fees exist.
 - List genuine ambiguities (conflicting prices, unreadable text, unclear periods) as short phrases in "ambiguities". If the image contains no legible pricing, return empty "billingPhases" and explain why in "ambiguities".
 - Respond with a single JSON object matching the provided schema. No commentary.
 

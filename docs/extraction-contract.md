@@ -5,7 +5,7 @@ extraction contract is the boundary between the two: the multimodal model may
 only transcribe billing facts that are literally visible in one screenshot,
 and every downstream monetary result is computed in TypeScript.
 
-Contract version: `2026-07-12.1` (`EXTRACTION_CONTRACT_VERSION` in
+Contract version: `2026-07-12.2` (`EXTRACTION_CONTRACT_VERSION` in
 `src/features/analyze-offer/domain/extraction.ts`).
 
 ## Shape
@@ -27,6 +27,11 @@ An extraction is an `OfferExtraction`:
   "$10 / month, billed annually"). Kept strictly separate from `dueToday`
   and phase prices so the Phase 3 engine can never confuse the advertised
   equivalent with the actual charge.
+- `minimumCommitment` — a visible minimum term normalized to months, with
+  evidence; `null` when it is not visible. It is never inferred from cadence.
+- `additionalFees[]` — separately visible fees, their amount and cadence when
+  shown, and textual evidence. An empty list means no fees were visible, not
+  that no fees exist.
 - `autoRenewal`, `cancellation`, `ambiguities[]` — explicit statements only;
   `unknown`/`null`/listed ambiguities instead of assumptions.
 

@@ -32,5 +32,11 @@
     "evidence": "Plan renews annually until cancelled."
   },
   "cancellation": null,
+  "minimumCommitment": {
+    "status": "not_visible",
+    "months": 0,
+    "evidence": ""
+  },
+  "additionalFees": [],
   "ambiguities": []
 }

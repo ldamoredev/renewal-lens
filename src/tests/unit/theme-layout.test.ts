@@ -61,4 +61,15 @@ describe("theme layout invariance", () => {
       }
     }
   });
+
+  it("keeps the light-theme first-year total on a dark, readable surface", () => {
+    const cssPath = fileURLToPath(
+      new URL("../../app/globals.css", import.meta.url),
+    );
+    const css = readFileSync(cssPath, "utf8");
+
+    expect(css).toMatch(
+      /\[data-theme="light"\] \.cost-callout\s*{[^}]*background:\s*#1a1826;[^}]*color:\s*#fdfbf7;/,
+    );
+  });
 });

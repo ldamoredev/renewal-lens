@@ -16,6 +16,7 @@ describe("Phase 1 pricing result states", () => {
     success: "Estimated first-year cost",
     partial: "Some billing details are missing.",
     ambiguous: "The actual billing frequency is unclear.",
+    insufficient: "The pricing terms are not visible enough.",
     error: "We could not process this screenshot.",
     rate_limited: "Please wait before analyzing another image.",
   };
@@ -56,8 +57,20 @@ describe("verified fictional examples", () => {
     ]);
   });
 
+  it("renders evidence per fact and keeps missing information explicit", () => {
+    const html = renderToStaticMarkup(
+      <PricingResult state="success" offer={defaultMockOffer} isExample />,
+    );
+
+    expect(html).toContain("Billing timeline");
+    expect(html).toContain("Evidence");
+    expect(html).toContain("Information not visible");
+    expect(html).toContain("$ is not assumed to mean USD");
+    expect(html).toContain("Calculation notes");
+  });
+
   it("keeps each expected first-year result explicit in presentation fixtures", () => {
-    expect(mockOffers.map((offer) => offer.firstYearCost)).toEqual([
+    expect(mockOffers.map((offer) => offer.firstYearCost.value)).toEqual([
       "$155.88",
       "$120.00",
       "$220.89",

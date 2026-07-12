@@ -2,15 +2,15 @@
 
 ## Current phase
 
-Phase 3 — Deterministic pricing engine (`COMPLETED`, Claude Code / Claude Fable 5). No later phase is active. Phase 4 remains `NOT_STARTED`.
+Phase 5 — Results, evidence, and uncertainty states (`COMPLETED`, Codex GPT-5.6 SOL). Phase 6 has not started.
 
 ## Current objective
 
-Completed: `computeOfferPricing` consumes `OfferExtraction` and computes due today, the 365-day first-year cost with its full charge schedule, and the half-up effective monthly cost using integer minor units only. The closed first-year convention is recorded as machine-readable `assumptions[]`, missing or contradictory data produces machine-readable blockers instead of guesses, and all expected values in the tests were verified by hand.
+Completed the evidence-backed result experience: billing timeline, per-fact citations, calculated totals, missing information, ambiguity handling, and insufficient-screenshot guidance.
 
 ## Overall progress
 
-4 of 9 phases are complete. Product UI, mock examples, the extraction contract, and the pricing engine are ready. Nothing is wired to a real upload flow or route yet — that is Phase 4, which also owns the verified fixture cache for the preloaded examples.
+6 of 9 phases are complete. Phase 5 passed deterministic tests, production build, and live Anthropic contract verification.
 
 ### Two-day time budget
 
@@ -28,8 +28,8 @@ Completed: `computeOfferPricing` consumes `OfferExtraction` and computes due tod
 |     1 | Product foundation, visual system, and examples | COMPLETED   | Codex GPT-5.6 SOL | Responsive UI, all states, three fictional examples, mock results |
 |     2 | Anthropic extraction contract                   | COMPLETED   | Claude Fable 5    | Domain types, Zod boundary, prompt, adapter, single bounded retry |
 |     3 | Deterministic pricing engine                    | COMPLETED   | Claude Fable 5    | Pure 365-day engine, twelfth-day timeline, blockers, 17 new tests |
-|     4 | Real upload flow and example fixture cache      | NOT_STARTED | —                 | Validated image pipeline; examples never call live API            |
-|     5 | Results, evidence, and uncertainty states       | NOT_STARTED | —                 | Human-readable complete, partial, ambiguous, insufficient results |
+|     4 | Real upload flow and example fixture cache      | COMPLETED   | Codex GPT-5.6 SOL | Upload, cached examples, live verification, and UI contrast pass  |
+|     5 | Results, evidence, and uncertainty states       | COMPLETED   | Codex GPT-5.6 SOL | Per-fact evidence, honest absence, four analysis result states    |
 |     6 | Production hardening                            | NOT_STARTED | —                 | In-memory IP limits, timeouts, privacy, metrics, Railway runtime  |
 |     7 | Tests, fixtures, and minimum evaluation         | NOT_STARTED | —                 | Required regression suite; Playwright/eval set are stretch only   |
 |     8 | Launch and portfolio                            | NOT_STARTED | —                 | Railway deploy, public assets, README, Contra EN, LinkedIn ES     |
@@ -78,10 +78,30 @@ Completed: `computeOfferPricing` consumes `OfferExtraction` and computes due tod
 - Encoded abstention as machine-readable `CalculationBlocker`s (`no_pricing_visible`, `price_after_trial_unknown`, `trial_length_unknown`, `phase_length_unknown`, `billing_cadence_unknown`, `phase_price_unknown`, `mixed_currencies`) and every convention as machine-readable `PricingAssumption`s.
 - Added 17 hand-verified pricing tests covering the three example patterns end to end from raw fixtures (Streamly $155.88 / 12 charges, CloudVault $120.00 / 1 charge, FitClub+ $220.89 / 12 charges), weekly (53 charges), quarterly (4), the day-365 renewal boundary, exact-half rounding, single-charge phases, phases beyond the window, all blockers, and equivalent-price exclusion.
 - Wrote `docs/pricing-engine.md` and updated `docs/architecture.md` to mark the first-year convention as implemented.
+- Added the shared `AnalysisApiResponse` contract and mapper from evidence-backed extraction plus deterministic pricing into the existing Phase 1 result shape.
+- Added `analyzeScreenshot`, which depends only on the `OfferFactsExtractor` port and maps every extraction outcome to a payload-free controlled product response.
+- Added `POST /api/analyze`: multipart parsing, early content-length rejection, file validation, transient image preparation, missing-key degradation, Anthropic extraction, deterministic pricing, and typed HTTP status mapping.
+- Added `prepareScreenshotUpload`: 10 MiB limit, PNG/JPEG/WebP allowlist, decoded-format/MIME match, 40 MP limit, animation rejection, EXIF orientation, metadata stripping, re-encoding, and maximum 1,568 px long side.
+- Promoted Streamly, CloudVault, and FitClub+ to production infrastructure fixtures and added an in-process verified cache that validates/maps/calculates them at module initialization.
+- Added `GET /api/examples/[id]` with immutable public caching; examples never construct an Anthropic client.
+- Replaced mock upload/example results in the client with real fetch flows, stale-request cancellation, a 520 ms example animation, Zod response validation, and explicit file/service error messages.
+- Added Sharp as a direct runtime dependency and documented the full pipeline in `docs/upload-pipeline.md`.
+- Added 18 Phase 4 tests across image preparation, orchestration, partial/ambiguous mapping, fixture cache, and route behavior; the full suite now has 66 tests.
+- Verified the live structured-output path with the independent Northstar Cinema screenshot: seven-day trial, $14.99 monthly renewal, $0 due today, and a deterministic $179.88 first-year total.
+- Ran each fictional example through the live upload path once and confirmed exact agreement with the checked-in fixtures: Streamly $155.88, CloudVault $120.00, and FitClub+ $220.89.
+- Fixed the light-theme first-year callout contrast with paint-only overrides, preserving identical theme geometry, and added a regression test; the full suite now has 67 tests.
+- Added a transport-safe `PresentationFact` model with `visible`, `derived`, `calculated`, and `not_visible` statuses plus evidence arrays for every displayed result.
+- Rebuilt the result panel around a multi-stage billing timeline, per-fact evidence disclosures, calculated first-year/effective-monthly values, actual cadence, displayed equivalents, renewal, commitment, cancellation, additional fees, missing information, ambiguities, and calculation notes.
+- Added explicit `success`, `partial`, `ambiguous`, and `insufficient` analysis outcomes; ambiguous calculations display `Not confirmed`, while insufficient screenshots request wider captures with pricing footnotes.
+- Versioned the extraction contract as `2026-07-12.2` to represent minimum commitment and additional fees without inventing absent values.
+- Kept the expanded structured-output schema inside Anthropic's union budget by using an explicit commitment visibility state and a non-null fee-frequency enum; verified the revised schema live with Streamly.
+- Extended the deterministic engine so visible one-time and recurring fees enter the first-year schedule; an additional fee with no visible amount blocks the total instead of being ignored.
+- Added `docs/result-presentation.md` and updated architecture, extraction, pricing, and README documentation.
+- Added 10 Phase 5 regression tests for evidence rendering, insufficient and ambiguous outcomes, commitment/fee mapping, fee calculations, live-schema structure, and richer fixture responses; the suite now has 77 tests.
 
 ## Work in progress
 
-- None. The Claude Design integration is complete.
+- None. Phase 5 is complete; Phase 6 has not started.
 
 ## Remaining tasks for current phase
 
@@ -115,17 +135,25 @@ Completed: `computeOfferPricing` consumes `OfferExtraction` and computes due tod
 - Phase 2 fixtures document the wire contract; Phase 4 still owns the verified fixture cache that the preloaded examples will serve from.
 - Time is measured in integer twelfth-days (month = one twelfth of a 365-day year), which realizes the closed convention without floating point or calendar lookups: monthly billing yields at most 12 first-year charges and an annual renewal on day 365 falls outside the window.
 - The effective monthly cost is the first-year total divided by 12, rounded half up on minor units — the engine's only division.
-- Blockers and assumptions are machine-readable codes; human copy for them belongs to Phase 5 presentation components.
+- `/api/analyze` is the only public path allowed to construct the Anthropic adapter; `/api/examples/*` is fixture-only and cacheable.
+- Upload limits are 10 MiB encoded input and 40 megapixels decoded; supported formats are PNG, JPEG, and WebP.
+- Image output retains the validated MIME family, applies orientation, removes metadata, never enlarges, and caps the long side at 1,568 px.
+- Client responses are validated with the same shared Zod schema used by the server response contract.
+- Phase 4 cancellation prevents stale UI updates; propagating `AbortSignal` into the extractor port is deferred.
+- Blockers and assumptions remain machine-readable in the domain and are translated into human copy by the Phase 5 presentation boundary.
 - A bounded paid phase with no visible cadence ("first month $1") is one charge at phase start, recorded as an assumption rather than blocked.
 - Due today can remain available while the first-year cost is blocked (honest partial results); a trailing free trial with no visible paid price abstains with `price_after_trial_unknown` instead of claiming a $0 year.
 - `displayedEquivalentPrice` is never read by the engine's math paths.
+- Presentation facts are created in the application layer before React; components arrange facts and evidence but perform no pricing calculations.
+- Missing cancellation, commitment, renewal, fees, or currency code remain `Not visible`/listed absence and never become a negative assertion.
+- A model-reported ambiguity takes precedence over a calculable schedule: derived totals are displayed as `Not confirmed` until the ambiguity is resolved.
+- No extracted billing phases maps to `insufficient`, distinct from technical failure and from a partial but useful extraction.
+- Additional fees with `one_time` frequency are scheduled once at signup; recurring fees follow their visible frequency. A fee with unknown amount blocks first-year cost.
+- Anthropic's structured-output union budget is protected by a union-free minimum-commitment visibility object and fee-frequency enum; the public domain still exposes absence as `null`.
 
 ## Known issues
 
-- The Browser skill package referenced by the environment was missing during Phase 1, so interactive screenshot-based desktop/mobile inspection was unavailable. A final human visual pass remains recommended.
-- Uploaded files are mock-only and are not parsed or validated. This is intentional and belongs to Phase 4.
-- The Anthropic adapter has never been exercised against the live API (Phase 2 tests are deterministic by policy). The first live call happens when Phase 4 wires the upload pipeline; structured-output acceptance of the pruned JSON Schema should be confirmed with one manual call at that point.
-- Screenshot resizing to the 1,568-pixel long side documented in `docs/architecture.md` is not implemented yet; it belongs to the Phase 4 image pipeline, which must also enforce MIME/size limits before the adapter is reached.
+- The Browser skill package remained absent during Phases 1 and 5, so responsive behavior was verified through common CSS breakpoints, server-rendered component tests, and the user's visual checks rather than automated screenshots. A final human desktop/mobile pass remains recommended.
 
 ## Blockers
 
@@ -134,49 +162,77 @@ Completed: `computeOfferPricing` consumes `OfferExtraction` and computes due tod
 ## Validation evidence
 
 - `pnpm validate`: passed end to end on 2026-07-12 (after Phase 3).
-  - TypeScript: passed.
-  - ESLint with zero warnings: passed.
-  - Prettier check: passed.
-  - Vitest: 48 tests passed in 5 test files (31 from Phases 1–2 + 17 new pricing tests).
-  - Next.js production build: passed; `/` and `/_not-found` generated as static routes.
-- All expected pricing values were verified by hand before being written into tests (totals, charge counts, day offsets, and rounding), including the three canonical totals from `docs/architecture.md`.
-- No live Anthropic call was made at any point.
+- `pnpm validate`: passed end to end after Phase 4 implementation: typecheck, lint with zero warnings, formatting, 66 tests in 9 files, and production build.
+- Production build routes: static `/`; dynamic `/api/analyze` and `/api/examples/[id]`.
+- Manual localhost fixture checks: Streamly, CloudVault, and FitClub+ each returned HTTP 200 with `$155.88`, `$120.00`, and `$220.89` respectively.
+- Manual invalid upload returned HTTP 400 with `invalid_file`.
+- Manual multipart upload of the supplied PNG passed validation/Sharp processing and returned the expected HTTP 503 `service_unavailable` because no API key was configured.
+- Independent live Northstar Cinema upload returned a high-confidence extraction and the correct deterministic $179.88 first-year total.
+- Live example comparison returned Streamly $155.88, CloudVault $120.00, and FitClub+ $220.89, matching the versioned fixtures exactly.
+- Final `pnpm validate`: passed with typecheck, lint zero-warnings, formatting, 67 tests in 9 files, and production build.
+- Phase 5 focused suites: 55 tests passed across schema, pricing, orchestration, and result components during implementation.
+- Phase 5 live schema audit: the first revision exceeded Anthropic's union limit and returned controlled HTTP 400/503; the schema was reduced without data loss, regression-protected, and retested.
+- Final live Streamly upload with contract `2026-07-12.2`: `success`, `$155.88`, 3 timeline facts, 6 detail facts, 3 explicit missing-information items, and 0 ambiguities.
+- Final quality gate: typecheck, lint zero-warnings, formatting, and 77 tests in 9 files passed. The sandboxed build hit an environment-only Turbopack `EPERM` while opening an internal port; `pnpm build` rerun with the required permission passed and produced `/`, `/api/analyze`, and `/api/examples/[id]`.
 
 ## Files changed in the current phase
 
 - `README.md`
 - `STATUS.md`
 - `docs/architecture.md`
-- `docs/pricing-engine.md` (new)
-- `src/features/analyze-offer/domain/pricing.ts` (new)
-- `src/tests/unit/pricing-engine.test.ts` (new)
+- `docs/extraction-contract.md`
+- `docs/pricing-engine.md`
+- `docs/result-presentation.md` (new)
+- `src/app/globals.css`
+- `src/components/evidence/evidence-disclosure.tsx` (new)
+- `src/components/home/renewal-lens-app.tsx`
+- `src/components/pricing-result/pricing-result.tsx`
+- `src/components/states/analysis-state.tsx`
+- `src/features/analyze-offer/application/analysis-response.ts`
+- `src/features/analyze-offer/domain/extraction.ts`
+- `src/features/analyze-offer/domain/pricing.ts`
+- `src/features/analyze-offer/infrastructure/extraction-prompt.ts`
+- `src/features/analyze-offer/infrastructure/fixtures/*.raw.json`
+- `src/features/analyze-offer/presentation/mock-offers.ts`
+- `src/features/analyze-offer/schemas/offer-extraction.ts`
+- `src/tests/integration/analysis-routes.test.ts`
+- `src/tests/integration/anthropic-offer-extractor.test.ts`
+- `src/tests/unit/analyze-screenshot.test.ts`
+- `src/tests/unit/offer-extraction-schema.test.ts`
+- `src/tests/unit/pricing-engine.test.ts`
+- `src/tests/unit/pricing-result.test.tsx`
+- `src/tests/unit/verified-examples.test.ts`
 
 ## Handoff for the next agent
 
 Completed:
 
-- Extraction contract (Phase 2): `OfferExtraction` domain types with evidence, `rawOfferExtractionSchema` + `mapRawExtraction` boundary, extraction prompts, and `AnthropicOfferExtractor` with one bounded structural retry (`createAnthropicOfferExtractor()` is the server-side factory; default model `claude-haiku-4-5`).
-- Pricing engine (Phase 3): `computeOfferPricing` in `src/features/analyze-offer/domain/pricing.ts` returns `OfferPricing` with `dueToday`, `firstYear` (total + `ScheduledCharge[]`), `effectiveMonthly`, and machine-readable `assumptions[]`; missing data yields machine-readable `CalculationBlocker`s. Conventions are documented in `docs/pricing-engine.md`.
-- 48 deterministic tests pass, including the three hand-verified canonical totals ($155.88, $120.00, $220.89).
+- Phase 5 now presents the full billing timeline, first-year total, effective monthly cost, actual cadence, displayed equivalents, renewal, minimum commitment, cancellation, additional fees, missing information, ambiguities, and calculation notes.
+- Every displayed fact has its own evidence disclosure. Calculated facts reference the visible charge evidence used by TypeScript.
+- The extraction contract is `2026-07-12.2`; minimum commitment and additional fees are supported without changing the rule that absent information stays absent.
+- The deterministic engine includes visible additional fees and abstains when a fee amount is missing.
+- Complete, partial, ambiguous, and insufficient-screenshot states are distinct from technical errors and rate limiting.
+- 77 deterministic tests pass.
 
 Validation:
 
-- `pnpm validate`: passed (typecheck, lint zero-warnings, format, 48 tests, production build).
+- Typecheck, lint zero-warnings, formatting, and 77 tests passed.
+- `pnpm build`: passed outside the filesystem sandbox after the sandbox blocked Turbopack's internal port with `EPERM`.
+- Live Streamly extraction passed against the updated Anthropic structured-output schema and returned the expected `$155.88` result with the richer presentation payload.
 
-Important context for Phase 4 (real upload flow and example fixture cache):
+Important context:
 
-- The pipeline to assemble is: validated upload → `ScreenshotInput` → `OfferFactsExtractor.extract()` → `computeOfferPricing()` → presentation model. Both ends already exist and are tested; Phase 4 owns the server route, MIME/size/dimension validation, resize to the 1,568 px long side (`sharp` is already allowed in the pnpm native build policy), and transient handling (never persist or log image bytes).
-- Preloaded examples must never call Anthropic: build verified extraction fixtures for Streamly/CloudVault/FitClub+ (the Phase 2 raw fixtures in `src/tests/fixtures/extractions/` are faithful to the SVG text and can seed them) and run them through `computeOfferPricing` at request time or build time.
-- `ExtractionOutcome` failure variants (`invalid_output`, `refused`, `rate_limited`, `timeout`, `api_error`) map naturally onto the Phase 1 UI states; blockers/assumptions map onto the partial/ambiguous states, but final result copy is Phase 5's job.
-- The first live API call should include a one-time manual confirmation that the pruned structured-output schema is accepted (see Known issues).
-- `createAnthropicOfferExtractor()` throws without `ANTHROPIC_API_KEY`; the route must degrade to a clear error state instead of crashing the page.
-- `mock-offers.ts` remains presentation-only data.
+- The implemented pipeline is `validated upload → transient Sharp transform → ScreenshotInput → OfferFactsExtractor → computeOfferPricing → AnalysisApiResponse → UI`.
+- Public example selection uses only `GET /api/examples/[id]`; it cannot construct an Anthropic client and is immutable-cacheable.
+- `POST /api/analyze` degrades to a clear `503 service_unavailable` without a key instead of crashing or persisting the upload.
+- Anthropic rejects schemas with too many union/array parameters. Keep the Phase 5 commitment object and fee-frequency enum union-free unless a live schema check proves an alternative valid.
+- The browser skill package is unavailable in this environment; a human desktop/mobile visual pass remains recommended before launch.
 
 Next recommended phase:
 
-- Phase 4 — Real upload flow and example fixture cache.
+- Phase 6 — Production hardening.
 
-Do not start Phase 4 automatically.
+Do not start Phase 6 automatically.
 
 ## Deferred ideas
 

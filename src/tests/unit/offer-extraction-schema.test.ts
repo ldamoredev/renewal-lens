@@ -7,9 +7,9 @@ import {
   rawOfferExtractionSchema,
   type RawOfferExtraction,
 } from "@/features/analyze-offer/schemas/offer-extraction";
-import cloudvaultRaw from "@/tests/fixtures/extractions/cloudvault-annual.raw.json";
-import fitclubRaw from "@/tests/fixtures/extractions/fitclub-promo.raw.json";
-import streamlyRaw from "@/tests/fixtures/extractions/streamly-trial.raw.json";
+import cloudvaultRaw from "@/features/analyze-offer/infrastructure/fixtures/cloudvault-annual.raw.json";
+import fitclubRaw from "@/features/analyze-offer/infrastructure/fixtures/fitclub-promo.raw.json";
+import streamlyRaw from "@/features/analyze-offer/infrastructure/fixtures/streamly-trial.raw.json";
 
 function parseFixture(fixture: unknown): RawOfferExtraction {
   const result = rawOfferExtractionSchema.safeParse(fixture);
@@ -100,6 +100,38 @@ describe("extraction fixtures", () => {
     expect(extraction.billingPhases[1].price?.minorUnits).toBe(1999);
     expect(extraction.billingPhases[1].duration).toBeNull();
   });
+
+  it("maps visible minimum commitment and additional fees with evidence", () => {
+    const raw = parseFixture(structuredClone(streamlyRaw));
+    const extraction = mapRawExtraction({
+      ...raw,
+      minimumCommitment: {
+        status: "visible",
+        months: 12,
+        evidence: "12-month minimum commitment",
+      },
+      additionalFees: [
+        {
+          label: "Setup fee",
+          amount: {
+            decimalText: "9.99",
+            currencyCode: null,
+            evidence: "$9.99 setup fee",
+          },
+          frequency: "one_time",
+          evidence: "$9.99 setup fee",
+        },
+      ],
+    });
+
+    expect(extraction.ok).toBe(true);
+    if (extraction.ok) {
+      expect(extraction.extraction.minimumCommitment?.months).toBe(12);
+      expect(extraction.extraction.additionalFees[0].amount?.minorUnits).toBe(
+        999,
+      );
+    }
+  });
 });
 
 describe("rawOfferExtractionSchema", () => {
@@ -187,6 +219,32 @@ describe("mapRawExtraction semantic rules", () => {
       ],
     });
     expect(mapped.ok).toBe(false);
+  });
+
+  it("rejects invalid commitments and unsupported fee amounts", () => {
+    const raw = base();
+    const invalidCommitment = mapRawExtraction({
+      ...raw,
+      minimumCommitment: {
+        status: "visible",
+        months: 0,
+        evidence: "minimum term",
+      },
+    });
+    expect(invalidCommitment.ok).toBe(false);
+
+    const emptyFeeEvidence = mapRawExtraction({
+      ...raw,
+      additionalFees: [
+        {
+          label: "Service fee",
+          amount: null,
+          frequency: "one_time",
+          evidence: "   ",
+        },
+      ],
+    });
+    expect(emptyFeeEvidence.ok).toBe(false);
   });
 
   it("drops blank ambiguity entries but keeps real ones", () => {

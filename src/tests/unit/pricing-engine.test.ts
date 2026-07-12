@@ -11,9 +11,9 @@ import {
   mapRawExtraction,
   rawOfferExtractionSchema,
 } from "@/features/analyze-offer/schemas/offer-extraction";
-import cloudvaultRaw from "@/tests/fixtures/extractions/cloudvault-annual.raw.json";
-import fitclubRaw from "@/tests/fixtures/extractions/fitclub-promo.raw.json";
-import streamlyRaw from "@/tests/fixtures/extractions/streamly-trial.raw.json";
+import cloudvaultRaw from "@/features/analyze-offer/infrastructure/fixtures/cloudvault-annual.raw.json";
+import fitclubRaw from "@/features/analyze-offer/infrastructure/fixtures/fitclub-promo.raw.json";
+import streamlyRaw from "@/features/analyze-offer/infrastructure/fixtures/streamly-trial.raw.json";
 
 function extractionFromFixture(fixture: unknown): OfferExtraction {
   const structural = rawOfferExtractionSchema.safeParse(fixture);
@@ -49,6 +49,8 @@ function extraction(
     displayedEquivalentPrice: null,
     autoRenewal: { status: "unknown", evidence: null },
     cancellation: null,
+    minimumCommitment: null,
+    additionalFees: [],
     ambiguities: [],
     ...overrides,
   };
@@ -441,6 +443,82 @@ describe("computeOfferPricing single-charge phases", () => {
     expect(assumptionCodes(pricing)).toContain(
       "single_charge_assumed_for_phase",
     );
+  });
+});
+
+describe("computeOfferPricing additional fees", () => {
+  const monthlyPlan: BillingPhase = {
+    kind: "regular",
+    price: money(1000),
+    billingPeriod: { value: 1, unit: "month" },
+    duration: null,
+    evidence: "$10 / month",
+  };
+
+  it("adds a visible one-time fee to the first-year total", () => {
+    const pricing = computeOfferPricing(
+      extraction([monthlyPlan], {
+        additionalFees: [
+          {
+            label: "Setup fee",
+            amount: money(999),
+            billingPeriod: null,
+            evidence: "$9.99 setup fee",
+          },
+        ],
+      }),
+    );
+
+    // 12 x $10 + $9.99 = $129.99.
+    expect(pricing.firstYear).toMatchObject({
+      available: true,
+      totalMinorUnits: 12999,
+      chargeCount: 13,
+    });
+  });
+
+  it("adds recurring fees at their visible cadence", () => {
+    const pricing = computeOfferPricing(
+      extraction([monthlyPlan], {
+        additionalFees: [
+          {
+            label: "Service fee",
+            amount: money(100),
+            billingPeriod: { value: 1, unit: "month" },
+            evidence: "$1 monthly service fee",
+          },
+        ],
+      }),
+    );
+
+    // 12 x $10 + 12 x $1 = $132.
+    expect(pricing.firstYear).toMatchObject({
+      available: true,
+      totalMinorUnits: 13200,
+      chargeCount: 24,
+    });
+  });
+
+  it("abstains when a visible fee has no amount", () => {
+    const pricing = computeOfferPricing(
+      extraction([monthlyPlan], {
+        additionalFees: [
+          {
+            label: "Taxes",
+            amount: null,
+            billingPeriod: null,
+            evidence: "Taxes apply",
+          },
+        ],
+      }),
+    );
+
+    expect(pricing.firstYear.available).toBe(false);
+    if (!pricing.firstYear.available) {
+      expect(blockerCodes(pricing.firstYear)).toContain(
+        "additional_fee_amount_unknown",
+      );
+    }
   });
 });
 

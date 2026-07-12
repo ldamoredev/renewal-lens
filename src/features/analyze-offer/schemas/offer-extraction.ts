@@ -34,6 +34,13 @@ const rawBillingPhaseSchema = z.strictObject({
   evidence: z.string(),
 });
 
+const rawAdditionalFeeSchema = z.strictObject({
+  label: z.string(),
+  amount: rawMoneySchema.nullable(),
+  frequency: z.enum(["one_time", "day", "week", "month", "quarter", "year"]),
+  evidence: z.string(),
+});
+
 export const rawOfferExtractionSchema = z.strictObject({
   merchant: z
     .strictObject({ name: z.string(), evidence: z.string() })
@@ -55,6 +62,12 @@ export const rawOfferExtractionSchema = z.strictObject({
   cancellation: z
     .strictObject({ text: z.string(), evidence: z.string() })
     .nullable(),
+  minimumCommitment: z.strictObject({
+    status: z.enum(["visible", "not_visible"]),
+    months: z.int(),
+    evidence: z.string(),
+  }),
+  additionalFees: z.array(rawAdditionalFeeSchema),
   ambiguities: z.array(z.string()),
 });
 
@@ -203,6 +216,53 @@ export function mapRawExtraction(raw: RawOfferExtraction): MappingResult {
     );
   }
 
+  if (raw.minimumCommitment.status === "visible") {
+    if (
+      raw.minimumCommitment.months < 1 ||
+      raw.minimumCommitment.months > 10_000
+    ) {
+      issues.push("minimumCommitment.months must be between 1 and 10000");
+    }
+    if (raw.minimumCommitment.evidence.trim().length === 0) {
+      issues.push(
+        "minimumCommitment.evidence must be non-empty verbatim screenshot text",
+      );
+    }
+  } else if (
+    raw.minimumCommitment.months !== 0 ||
+    raw.minimumCommitment.evidence.trim().length > 0
+  ) {
+    issues.push(
+      "minimumCommitment must use months 0 and empty evidence when not visible",
+    );
+  }
+
+  const additionalFees = raw.additionalFees.map((fee, index) => {
+    const path = `additionalFees[${index}]`;
+    if (fee.label.trim().length === 0) {
+      issues.push(`${path}.label must be non-empty`);
+    }
+    if (fee.evidence.trim().length === 0) {
+      issues.push(
+        `${path}.evidence must be non-empty verbatim screenshot text`,
+      );
+    }
+    return {
+      label: fee.label,
+      amount:
+        fee.amount === null
+          ? null
+          : mapMoney(fee.amount, `${path}.amount`, issues),
+      billingPeriod:
+        fee.frequency === "one_time"
+          ? null
+          : fee.frequency === "quarter"
+            ? { value: 3, unit: "month" as const }
+            : { value: 1, unit: fee.frequency },
+      evidence: fee.evidence,
+    };
+  });
+
   if (issues.length > 0) {
     return { ok: false, issues };
   }
@@ -225,6 +285,17 @@ export function mapRawExtraction(raw: RawOfferExtraction): MappingResult {
             },
       autoRenewal: raw.autoRenewal,
       cancellation: raw.cancellation,
+      minimumCommitment:
+        raw.minimumCommitment.status === "visible"
+          ? {
+              months: raw.minimumCommitment.months,
+              evidence: raw.minimumCommitment.evidence,
+            }
+          : null,
+      additionalFees: additionalFees.map((fee) => ({
+        ...fee,
+        amount: fee.amount as ExtractedMoney | null,
+      })),
       ambiguities: raw.ambiguities
         .map((entry) => entry.trim())
         .filter((entry) => entry.length > 0),

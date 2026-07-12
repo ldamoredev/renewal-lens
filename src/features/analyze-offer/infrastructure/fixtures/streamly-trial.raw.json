@@ -35,5 +35,11 @@
     "text": "Cancel anytime before renewal.",
     "evidence": "Cancel anytime before renewal."
   },
+  "minimumCommitment": {
+    "status": "not_visible",
+    "months": 0,
+    "evidence": ""
+  },
+  "additionalFees": [],
   "ambiguities": []
 }

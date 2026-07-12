@@ -37,6 +37,8 @@ Charge timing is exposed as whole `dayOffset` values (twelfth-days floored).
   for a leading paid phase) and marked `source: "derived"`.
 - `firstYear` — total minor units, charge count, and the full schedule of
   `ScheduledCharge`s (day offset, amount, currency, phase index, evidence).
+  Visible additional fees are included: a fee without a cadence is counted
+  once at signup; a recurring fee follows its visible cadence.
 - `effectiveMonthly` — first-year total divided by 12, rounded half up on
   minor units.
 - `assumptions[]` — machine-readable codes recording every convention used:
@@ -49,15 +51,16 @@ Charge timing is exposed as whole `dayOffset` values (twelfth-days floored).
 Missing or contradictory data produces machine-readable
 `CalculationBlocker`s, never estimates:
 
-| Blocker                     | Trigger                                                                             |
-| --------------------------- | ----------------------------------------------------------------------------------- |
-| `no_pricing_visible`        | No billing phases were extracted.                                                   |
-| `price_after_trial_unknown` | The last visible phase is a free trial (no paid price on screen).                   |
-| `trial_length_unknown`      | A non-final trial has no visible duration, so later phases cannot be anchored.      |
-| `phase_length_unknown`      | An ongoing phase is followed by another phase (contradictory timeline).             |
-| `billing_cadence_unknown`   | A paid phase has neither cadence nor duration.                                      |
-| `phase_price_unknown`       | A paid phase carries no price (defensive; the schema mapper normally rejects this). |
-| `mixed_currencies`          | Phases carry different explicit ISO currency codes.                                 |
+| Blocker                         | Trigger                                                                             |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| `no_pricing_visible`            | No billing phases were extracted.                                                   |
+| `price_after_trial_unknown`     | The last visible phase is a free trial (no paid price on screen).                   |
+| `trial_length_unknown`          | A non-final trial has no visible duration, so later phases cannot be anchored.      |
+| `phase_length_unknown`          | An ongoing phase is followed by another phase (contradictory timeline).             |
+| `billing_cadence_unknown`       | A paid phase has neither cadence nor duration.                                      |
+| `phase_price_unknown`           | A paid phase carries no price (defensive; the schema mapper normally rejects this). |
+| `additional_fee_amount_unknown` | A fee is visible but its amount is not, so the total cannot be confirmed.           |
+| `mixed_currencies`              | Phases carry different explicit ISO currency codes.                                 |
 
 A bounded paid phase with a price but no visible cadence ("first month $1")
 is treated as one charge at the phase start and recorded in `assumptions[]`

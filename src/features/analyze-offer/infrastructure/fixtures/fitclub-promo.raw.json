@@ -36,5 +36,11 @@
     "text": "Cancel before the next billing date.",
     "evidence": "Cancel before the next billing date."
   },
+  "minimumCommitment": {
+    "status": "not_visible",
+    "months": 0,
+    "evidence": ""
+  },
+  "additionalFees": [],
   "ambiguities": []
 }

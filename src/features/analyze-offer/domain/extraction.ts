@@ -8,7 +8,7 @@
  * Anthropic, Zod, or any infrastructure module.
  */
 
-export const EXTRACTION_CONTRACT_VERSION = "2026-07-12.1";
+export const EXTRACTION_CONTRACT_VERSION = "2026-07-12.2";
 
 /** Fixed decimal scale for monetary minor units in the MVP. */
 export const MONEY_SCALE = 2;
@@ -81,6 +81,18 @@ export type CancellationObservation = {
   readonly evidence: string;
 };
 
+export type MinimumCommitmentObservation = {
+  readonly months: number;
+  readonly evidence: string;
+};
+
+export type AdditionalFee = {
+  readonly label: string;
+  readonly amount: ExtractedMoney | null;
+  readonly billingPeriod: Period | null;
+  readonly evidence: string;
+};
+
 export type MerchantObservation = {
   readonly name: string;
   readonly evidence: string;
@@ -98,6 +110,8 @@ export type OfferExtraction = {
   readonly displayedEquivalentPrice: DisplayedEquivalentPrice | null;
   readonly autoRenewal: AutoRenewalObservation;
   readonly cancellation: CancellationObservation | null;
+  readonly minimumCommitment: MinimumCommitmentObservation | null;
+  readonly additionalFees: readonly AdditionalFee[];
   /** Model-reported ambiguities, verbatim and short (may be empty). */
   readonly ambiguities: readonly string[];
 };

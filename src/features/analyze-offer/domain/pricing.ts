@@ -55,6 +55,10 @@ export type CalculationBlocker =
   | { readonly code: "phase_length_unknown"; readonly phaseIndex: number }
   | { readonly code: "billing_cadence_unknown"; readonly phaseIndex: number }
   | { readonly code: "phase_price_unknown"; readonly phaseIndex: number }
+  | {
+      readonly code: "additional_fee_amount_unknown";
+      readonly feeIndex: number;
+    }
   | { readonly code: "mixed_currencies" };
 
 /** Machine-readable record of every convention the result relies on. */
@@ -126,12 +130,17 @@ type ScheduleResult = {
 };
 
 function checkCurrencyConsistency(
-  phases: readonly BillingPhase[],
+  extraction: OfferExtraction,
 ): CalculationBlocker | null {
   const codes = new Set<string>();
-  for (const phase of phases) {
+  for (const phase of extraction.billingPhases) {
     if (phase.price?.currencyCode) {
       codes.add(phase.price.currencyCode);
+    }
+  }
+  for (const fee of extraction.additionalFees) {
+    if (fee.amount?.currencyCode) {
+      codes.add(fee.amount.currencyCode);
     }
   }
   return codes.size > 1 ? { code: "mixed_currencies" } : null;
@@ -227,7 +236,7 @@ function buildSchedule(extraction: OfferExtraction): ScheduleResult {
     result.blockers.push({ code: "no_pricing_visible" });
     return result;
   }
-  const currencyBlocker = checkCurrencyConsistency(extraction.billingPhases);
+  const currencyBlocker = checkCurrencyConsistency(extraction);
   if (currencyBlocker !== null) {
     result.blockers.push(currencyBlocker);
     return result;
@@ -248,6 +257,25 @@ function buildSchedule(extraction: OfferExtraction): ScheduleResult {
       // Later phases start after the first-year window and cannot affect
       // the result; stop without inspecting them.
       break;
+    }
+  }
+
+  for (const [feeIndex, fee] of extraction.additionalFees.entries()) {
+    if (fee.amount === null) {
+      result.blockers.push({
+        code: "additional_fee_amount_unknown",
+        feeIndex,
+      });
+      continue;
+    }
+    const chargeIndex = extraction.billingPhases.length + feeIndex;
+    if (fee.billingPeriod === null) {
+      result.charges.push(chargeAt(0, fee.amount, chargeIndex));
+      continue;
+    }
+    const step = periodToTwelfths(fee.billingPeriod);
+    for (let cursor = 0; cursor < FIRST_YEAR_TWELFTHS; cursor += step) {
+      result.charges.push(chargeAt(cursor, fee.amount, chargeIndex));
     }
   }
   return result;

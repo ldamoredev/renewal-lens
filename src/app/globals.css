@@ -368,14 +368,16 @@ label:focus-within {
 }
 .analysis-bridge--success > div,
 .analysis-bridge--partial > div,
-.analysis-bridge--ambiguous > div {
+.analysis-bridge--ambiguous > div,
+.analysis-bridge--insufficient > div {
   border-left-style: solid;
   border-left-color: var(--green);
   box-shadow: 0 0 12px rgba(62, 207, 142, 0.15);
 }
 .analysis-bridge--success i,
 .analysis-bridge--partial i,
-.analysis-bridge--ambiguous i {
+.analysis-bridge--ambiguous i,
+.analysis-bridge--insufficient i {
   top: 100%;
   opacity: 1;
   background: var(--green);
@@ -551,6 +553,7 @@ label:focus-within {
   letter-spacing: -0.045em;
 }
 .timeline-card {
+  list-style: none;
   margin-top: 1.6rem;
   padding: 1.2rem 1.25rem;
   border: 1px solid #d6e0eb;
@@ -558,16 +561,34 @@ label:focus-within {
   background: #fff;
 }
 .timeline-item {
+  position: relative;
   display: grid;
   grid-template-columns: 12px 1fr auto;
   gap: 0.75rem;
   align-items: center;
 }
+.timeline-item + .timeline-item {
+  margin-top: 1.2rem;
+}
+.timeline-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 17px;
+  bottom: -17px;
+  left: 3px;
+  border-left: 1px solid #a5c9ec;
+}
 .timeline-item > span:not(.timeline-dot) {
   color: #6e7b8e;
   font-size: 0.73rem;
 }
+.timeline-item > div > span {
+  color: #6e7b8e;
+  font-size: 0.73rem;
+}
 .timeline-item strong {
+  max-width: 230px;
+  text-align: right;
   font-size: 1.1rem;
   letter-spacing: -0.02em;
 }
@@ -578,12 +599,6 @@ label:focus-within {
   border-radius: 50%;
   background: var(--blue);
   box-shadow: 0 0 0 1px var(--blue);
-}
-.timeline-line {
-  width: 1px;
-  height: 22px;
-  margin: 4px 0 4px 3px;
-  border-left: 1px solid #a5c9ec;
 }
 .cost-callout {
   display: flex;
@@ -616,19 +631,16 @@ label:focus-within {
 .detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 1px;
   margin: 0.9rem 0 0;
-  border: 1px solid #d6e0eb;
+  padding: 1px;
   border-radius: 12px;
+  background: #d6e0eb;
   overflow: hidden;
 }
 .detail-grid > div {
   padding: 0.85rem 1rem;
-}
-.detail-grid > div:nth-child(odd) {
-  border-right: 1px solid #d6e0eb;
-}
-.detail-grid > div:nth-child(-n + 2) {
-  border-bottom: 1px solid #d6e0eb;
+  background: #f4f7fb;
 }
 .detail-grid dt {
   color: #78869a;
@@ -639,12 +651,15 @@ label:focus-within {
   font-size: 0.82rem;
   font-weight: 620;
 }
-.evidence-row {
-  margin-top: 0.8rem;
-  border-top: 1px solid #d6e0eb;
+.detail-fact--not_visible dd {
+  color: #77859a;
+  font-weight: 500;
 }
-.evidence-row summary {
-  padding: 0.9rem 0 0.2rem;
+.evidence-disclosure {
+  margin-top: 0.65rem;
+}
+.evidence-disclosure summary,
+.calculation-notes summary {
   color: #3d70a2;
   font:
     600 0.62rem "JetBrains Mono Variable",
@@ -653,7 +668,13 @@ label:focus-within {
   letter-spacing: 0.06em;
   cursor: pointer;
 }
-.evidence-row blockquote {
+.evidence-disclosure--compact {
+  margin-top: 0.3rem;
+}
+.evidence-disclosure--compact summary {
+  font-size: 0.52rem;
+}
+.evidence-disclosure blockquote {
   margin: 0.7rem 0 0;
   padding: 0.8rem 1rem;
   border-left: 2px solid var(--blue);
@@ -661,6 +682,70 @@ label:focus-within {
   color: #4d5c70;
   font-size: 0.76rem;
   line-height: 1.5;
+}
+.evidence-disclosure--compact blockquote {
+  margin-top: 0.4rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.68rem;
+}
+.cost-callout .evidence-disclosure summary {
+  color: #8fb8e1;
+}
+.cost-callout .evidence-disclosure blockquote {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d9e2ed;
+}
+.result-status {
+  padding: 0.38rem 0.55rem;
+  border: 1px solid rgba(31, 150, 102, 0.25);
+  border-radius: 999px;
+  background: rgba(62, 207, 142, 0.1);
+  color: #147249;
+  font:
+    600 0.57rem "JetBrains Mono Variable",
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.result-status--partial,
+.result-status--insufficient {
+  border-color: rgba(174, 121, 12, 0.28);
+  background: rgba(224, 199, 131, 0.2);
+  color: #805c0c;
+}
+.result-status--ambiguous {
+  border-color: rgba(78, 155, 232, 0.3);
+  background: rgba(78, 155, 232, 0.12);
+  color: #356a9e;
+}
+.uncertainty-list {
+  margin-top: 0.9rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #d6e0eb;
+  border-radius: 12px;
+  background: #fff;
+}
+.uncertainty-list--ambiguous {
+  border-color: #b9d6f0;
+  background: #edf6fe;
+}
+.uncertainty-list h3 {
+  margin: 0;
+  font-size: 0.75rem;
+}
+.uncertainty-list ul,
+.calculation-notes ul {
+  margin: 0.55rem 0 0;
+  padding-left: 1.1rem;
+  color: #657388;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+.calculation-notes {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #d6e0eb;
 }
 .state-notice {
   display: grid;
@@ -966,7 +1051,8 @@ footer > span {
   }
   .analysis-bridge--success > div,
   .analysis-bridge--partial > div,
-  .analysis-bridge--ambiguous > div {
+  .analysis-bridge--ambiguous > div,
+  .analysis-bridge--insufficient > div {
     border-top-style: solid;
     border-top-color: var(--green);
   }
@@ -979,7 +1065,8 @@ footer > span {
   }
   .analysis-bridge--success i,
   .analysis-bridge--partial i,
-  .analysis-bridge--ambiguous i {
+  .analysis-bridge--ambiguous i,
+  .analysis-bridge--insufficient i {
     top: -4px;
     left: 100%;
   }
@@ -1064,8 +1151,16 @@ footer > span {
   .pricing-summary__merchant {
     gap: 0.7rem;
   }
-  .confidence {
+  .result-status {
     font-size: 0.48rem;
+  }
+  .timeline-item {
+    grid-template-columns: 12px 1fr;
+  }
+  .timeline-item strong {
+    grid-column: 2;
+    max-width: none;
+    text-align: left;
   }
   .cost-callout {
     align-items: flex-start;
@@ -1075,11 +1170,7 @@ footer > span {
     grid-template-columns: 1fr;
   }
   .detail-grid > div {
-    border-bottom: 1px solid #d6e0eb;
-    border-right: 0 !important;
-  }
-  .detail-grid > div:last-child {
-    border-bottom: 0;
+    border: 0;
   }
   .section-heading {
     align-items: flex-start;
@@ -1503,6 +1594,19 @@ html[data-theme="light"] {
 [data-theme="light"] .result-panel {
   background: #fdfbf7;
   color: #1a1826;
+}
+
+[data-theme="light"] .cost-callout {
+  background: #1a1826;
+  color: #fdfbf7;
+}
+
+[data-theme="light"] .cost-callout > div span {
+  color: #c8c4d2;
+}
+
+[data-theme="light"] .cost-callout__code {
+  color: #7ec09e;
 }
 
 [data-theme="light"] .example-card {
