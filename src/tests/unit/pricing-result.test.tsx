@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { PricingResult } from "@/components/pricing-result/pricing-result";
 import type { AnalysisState } from "@/components/states/analysis-state";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   defaultMockOffer,
   mockOffers,
@@ -34,6 +35,16 @@ describe("Phase 1 pricing result states", () => {
       expect(html).toContain(copy);
     });
   }
+});
+
+describe("theme control", () => {
+  it("renders an accessible dark/light theme toggle", () => {
+    const html = renderToStaticMarkup(<ThemeToggle />);
+
+    expect(html).toContain('aria-label="Toggle color theme"');
+    expect(html).toContain("theme-toggle__moon");
+    expect(html).toContain("theme-toggle__sun");
+  });
 });
 
 describe("verified fictional examples", () => {

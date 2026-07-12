@@ -7,6 +7,7 @@ import { ExampleGallery } from "@/components/examples/example-gallery";
 import { PricingResult } from "@/components/pricing-result/pricing-result";
 import type { AnalysisState } from "@/components/states/analysis-state";
 import { BrandMark } from "@/components/ui/brand-mark";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { UploadPanel } from "@/components/upload/upload-panel";
 import {
   defaultMockOffer,
@@ -88,20 +89,31 @@ export function RenewalLensApp() {
   }
 
   return (
-    <main>
-      <header className="site-header">
-        <a className="logo" href="#top" aria-label="RenewalLens home">
-          <BrandMark />
-          <span>RenewalLens</span>
-        </a>
-        <nav aria-label="Main navigation">
-          <a href="#how-it-works">How it works</a>
-          <a href="#examples">Examples</a>
-        </nav>
-        <span className="build-status">
-          <span /> Public preview
-        </span>
-      </header>
+    <main className="app-root">
+      <div className="ambient-canvas" aria-hidden="true">
+        <span className="ambient-orb ambient-orb--blue" />
+        <span className="ambient-orb ambient-orb--green" />
+        <span className="ambient-grid" />
+      </div>
+
+      <div className="site-header-wrap">
+        <header className="site-header">
+          <a className="logo" href="#top" aria-label="RenewalLens home">
+            <BrandMark />
+            <span>RenewalLens</span>
+          </a>
+          <nav aria-label="Main navigation">
+            <a href="#how-it-works">How it works</a>
+            <a href="#examples">Examples</a>
+          </nav>
+          <div className="header-actions">
+            <ThemeToggle />
+            <span className="build-status">
+              <span /> Public preview
+            </span>
+          </div>
+        </header>
+      </div>
       <div id="top" className="page-shell">
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero__copy">
