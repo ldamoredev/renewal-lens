@@ -20,7 +20,7 @@ The three built-in examples are fictional and deterministic:
 
 ## Local development
 
-Requirements: Node.js 20.9 or newer and pnpm 11.12.
+Requirements: Node.js 22.13 or newer and pnpm 11.12.
 
 ```bash
 pnpm install

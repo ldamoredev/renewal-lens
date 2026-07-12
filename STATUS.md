@@ -110,14 +110,16 @@ Completed: the critical regression coverage exists — (1) full pure-pipeline re
 - Added the favicon set from the brand mark (`src/app/icon.svg` hand-drawn, plus `icon.png` 48 px and `apple-icon.png` 180 px generated with sharp); Next serves all three automatically.
 - Added the 1200×630 social image `public/og.png` (brand mark, tagline, FitClub+ evidence chips) and wired full Open Graph/Twitter metadata in `src/app/layout.tsx`; `metadataBase` reads `NEXT_PUBLIC_APP_URL` (set at deploy) with a localhost fallback.
 - Captured four real portfolio screenshots into `docs/portfolio/` with headless Chrome CDP against the production build: desktop hero dark and light, mobile hero dark, and the FitClub+ verified-example result panel (dark, header hidden for composition). All at 2× device scale.
+- Deployed to Railway: project `renewal-lens`, single service from the repo, public domain https://renewal-lens-production.up.railway.app, variables `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL=claude-haiku-4-5`, and `NEXT_PUBLIC_APP_URL` set before the final build.
+- Added `railway.json` (start `pnpm start`, health check `/health` with 120 s timeout, restart `ON_FAILURE` max 5) and pinned Node 22 (`engines >=22.13.0` + `.node-version`) after the first build failed on Railpack's Node 20 vs pnpm 11.12's Node ≥22.13 requirement.
+- Production smoke test passed: `/health` ok; all security headers including the self-contained CSP; the three cached examples return $155.88/$120.00/$220.89 without touching Anthropic; `og:image` resolves absolutely; and one real screenshot upload ran the full live pipeline (Haiku extraction + deterministic engine) returning the correct Streamly result in 5.3 s, reflected in `/health` metrics.
 
 ## Work in progress
 
-- Phase 8 public assets are done: favicon set, social/OG image, social metadata, and four real portfolio screenshots.
+- Phase 8 public assets and the Railway deploy are done. The app is live at https://renewal-lens-production.up.railway.app.
 
 ## Remaining tasks for current phase
 
-- Railway deploy: create the service, set `ANTHROPIC_API_KEY` (+ optional `ANTHROPIC_MODEL`, `RATE_LIMIT_*`), set `NEXT_PUBLIC_APP_URL` to the public URL so `og:image` resolves absolutely, configure `/health` as the health-check path, and run the live smoke check (three examples, one real upload, headers).
 - Portfolio copy: README final pass, Contra copy in English, LinkedIn draft in Spanish.
 - Recommended human desktop/mobile visual pass before publishing.
 
@@ -172,6 +174,8 @@ Completed: the critical regression coverage exists — (1) full pure-pipeline re
 - The route deadline (60 s) responds with `timeout` rather than aborting the upstream call; the Anthropic client's own 45 s timeout remains the inner bound.
 - Phase 7 scope was deliberately reduced by owner decision to the two critical suites above. Playwright, browser E2E, an HTTP-level fake-extractor route suite, a UI-state audit, and a separate evaluation document were all cut as not worth their cost; the deferred eval set remains a stretch idea only.
 - The pipeline regression file is the canonical freeze of end-to-end behavior: any change that alters a canonical payload must consciously update it.
+- Node is pinned to 22 (`engines >=22.13.0`, `.node-version`) because pnpm 11.12 requires Node ≥22.13; Railpack honors the pin.
+- Deploys go through `railway up` from the working tree (no GitHub-connected service yet); `railway.json` is the declarative deploy config.
 
 ## Known issues
 
