@@ -2,15 +2,15 @@
 
 ## Current phase
 
-Phase 6 — Production hardening (`COMPLETED`, Claude Code / Claude Fable 5). No later phase is active. Phase 7 remains `NOT_STARTED`.
+Phase 7 — Tests, fixtures, and minimum evaluation (`COMPLETED`, Claude Code / Claude Fable 5). Scope was reduced by owner decision to the critical regression coverage: pure-pipeline fixture regression plus an adversarial model-output table; no Playwright, no browser E2E, no separate evaluation document. No later phase is active. Phase 8 remains `NOT_STARTED`.
 
 ## Current objective
 
-Completed: the app is hardened for the single-process Railway runtime — in-memory per-IP rate limiting on `POST /api/analyze` with `Retry-After`, `GET /health` with safe operational metrics, a 60 s overall route deadline, security headers with a production-only self-contained CSP, structured safe-metadata logging, and environment-variable configuration with safe defaults. All behaviors were verified against a real production build.
+Completed: the critical regression coverage exists — (1) full pure-pipeline regression from the three verified raw fixtures through schema → mapper → engine → presentation against hand-verified expected payloads, including a guarantee that the public example cache equals the live pipeline output; and (2) a deterministic adversarial suite of hostile-but-structurally-valid model outputs asserting the system always ends in an honest result or blocker — never an exception, NaN, Infinity, or invented number. All tests deterministic; no live API calls.
 
 ## Overall progress
 
-7 of 9 phases are complete. The product pipeline is feature-complete and production-hardened; the remaining work is the Phase 7 regression suite and the Phase 8 launch.
+8 of 9 phases are complete. The product is feature-complete, production-hardened, and regression-protected; the only remaining work is the Phase 8 launch.
 
 ### Two-day time budget
 
@@ -31,7 +31,7 @@ Completed: the app is hardened for the single-process Railway runtime — in-mem
 |     4 | Real upload flow and example fixture cache      | COMPLETED   | Codex GPT-5.6 SOL | Upload, cached examples, live verification, and UI contrast pass  |
 |     5 | Results, evidence, and uncertainty states       | COMPLETED   | Codex GPT-5.6 SOL | Per-fact evidence, honest absence, four analysis result states    |
 |     6 | Production hardening                            | COMPLETED   | Claude Fable 5    | IP limits, /health, deadline, headers, metrics, verified runtime  |
-|     7 | Tests, fixtures, and minimum evaluation         | NOT_STARTED | —                 | Required regression suite; Playwright/eval set are stretch only   |
+|     7 | Tests, fixtures, and minimum evaluation         | COMPLETED   | Claude Fable 5    | Pipeline regression + adversarial table; Playwright/eval cut      |
 |     8 | Launch and portfolio                            | NOT_STARTED | —                 | Railway deploy, public assets, README, Contra EN, LinkedIn ES     |
 
 ## Completed work
@@ -105,6 +105,8 @@ Completed: the app is hardened for the single-process Railway runtime — in-mem
 - Added a 60 s overall route deadline around transform + extraction that returns the existing `timeout` state (HTTP 504) instead of holding the connection.
 - Added security headers to every route via `next.config.ts` + `src/lib/http/security-headers.ts`: nosniff, DENY framing, strict referrer policy, restrictive permissions policy, HSTS, and a production-only fully self-contained CSP.
 - Added `docs/production-hardening.md`, updated `.env.example` and `README.md`, and added 22 hardening tests (limiter, config parsing, client IP, metrics, headers, and route-level 429/health integration); the suite now has 99 tests.
+- Added `src/tests/integration/pipeline-regression.test.ts`: the three verified raw fixtures run through the real schema → mapper → engine → presentation pipeline and are asserted against hand-verified payloads (states, timelines with verbatim evidence, $155.88/$120.00/$220.89 totals, effective monthlies, displayed-equivalent separation, derived due-today, explicit absence, convention assumptions), plus a consistency guarantee that `getVerifiedExample(id)` deep-equals the live pipeline output for each fixture.
+- Added `src/tests/unit/adversarial-model-output.test.ts`: a deterministic table of hostile-but-structurally-valid model outputs (13-digit and over-precise decimals, exponent/hex/locale formats, zero/negative/over-cap periods, mixed currencies, implausible phase order, amount-less fees, smuggled commitment values, markup-like evidence, 50 duplicated ambiguities, empty screenshots, maximum-magnitude money) with one invariant: the pipeline ends in an honest schema-valid response or an explicit rejection — never an exception, NaN, Infinity, or invented number. The suite now has 125 tests.
 
 ## Work in progress
 
@@ -163,6 +165,8 @@ Completed: the app is hardened for the single-process Railway runtime — in-mem
 - The CSP is production-only (dev needs eval for fast refresh) and fully self-contained: no external origin is allowed anywhere; inline script/style stay allowed because Next.js hydration and the theme pre-paint script require them.
 - `/health` exposes the metrics snapshot publicly; this is safe by construction because the registry cannot contain request-derived content.
 - The route deadline (60 s) responds with `timeout` rather than aborting the upstream call; the Anthropic client's own 45 s timeout remains the inner bound.
+- Phase 7 scope was deliberately reduced by owner decision to the two critical suites above. Playwright, browser E2E, an HTTP-level fake-extractor route suite, a UI-state audit, and a separate evaluation document were all cut as not worth their cost; the deferred eval set remains a stretch idea only.
+- The pipeline regression file is the canonical freeze of end-to-end behavior: any change that alters a canonical payload must consciously update it.
 
 ## Known issues
 
@@ -176,73 +180,46 @@ Completed: the app is hardened for the single-process Railway runtime — in-mem
 
 ## Validation evidence
 
-- `pnpm validate`: passed end to end after Phase 6 on 2026-07-12.
+- `pnpm validate`: passed end to end after Phase 7 on 2026-07-12.
   - TypeScript: passed.
   - ESLint with zero warnings: passed.
   - Prettier check: passed.
-  - Vitest: 99 tests passed in 14 files (77 from Phases 1–5 + 22 new hardening tests).
+  - Vitest: 125 tests passed in 16 files (99 from Phases 1–6 + 26 new regression tests).
   - Next.js production build: passed; routes `/`, `/_not-found`, `/api/analyze`, `/api/examples/[id]`, `/health`.
-- Manual production-runtime check (`pnpm start`, `NODE_ENV=production`, `PORT=3411`, `RATE_LIMIT_MAX_REQUESTS=2`, no API key):
-  - `GET /health` returned `status: ok` with uptime and an empty metrics snapshot, `Cache-Control: no-store`.
-  - `GET /` returned 200 with all security headers including the self-contained CSP.
-  - Three analyze POSTs from one forwarded IP returned 400, 400, then 429 with `Retry-After: 3600`; a different IP still received 400.
-  - `GET /health` afterwards reported `requests: 5`, `outcomes: { invalid_file: 3, rate_limited: 2 }` and contained no IPs.
-  - Server log showed only structured `analyze_request` lines with outcome/status/duration.
+- The expected payload values in the pipeline regression were generated from the real pipeline and cross-checked against the hand-verified canonical totals before being written into assertions.
+- No live Anthropic call was made.
 
 ## Files changed in the current phase
 
-- `.env.example`
-- `README.md`
 - `STATUS.md`
-- `docs/production-hardening.md` (new)
-- `next.config.ts`
-- `src/app/api/analyze/route.ts`
-- `src/app/health/route.ts` (new)
-- `src/lib/http/client-ip.ts` (new)
-- `src/lib/http/security-headers.ts` (new)
-- `src/lib/metrics/analysis-metrics.ts` (new)
-- `src/lib/rate-limit/analyze-rate-limiter.ts` (new)
-- `src/lib/rate-limit/ip-rate-limiter.ts` (new)
-- `src/tests/integration/production-hardening.test.ts` (new)
-- `src/tests/unit/analysis-metrics.test.ts` (new)
-- `src/tests/unit/client-ip.test.ts` (new)
-- `src/tests/unit/ip-rate-limiter.test.ts` (new)
-- `src/tests/unit/security-headers.test.ts` (new)
+- `src/tests/integration/pipeline-regression.test.ts` (new)
+- `src/tests/unit/adversarial-model-output.test.ts` (new)
 
 ## Handoff for the next agent
 
 Completed:
 
-- The full product pipeline works and is production-hardened: `validated upload → transient Sharp transform → ScreenshotInput → OfferFactsExtractor → computeOfferPricing → AnalysisApiResponse → UI`, now guarded by per-IP rate limiting, a 60 s route deadline, security headers, `GET /health`, safe metrics, and structured safe-metadata logging.
-- Rate limiting: in-memory fixed window, 10 requests/hour/IP by default, env-overridable, checked before body parsing, `Retry-After` on 429, bounded memory. IPs are never logged or persisted.
-- `GET /health` is the Railway health-check path and exposes only outcome counters and durations.
-- Security headers apply to every route; the production build adds a fully self-contained CSP (verified against the real production server).
-- 99 deterministic tests pass.
+- The product is feature-complete, production-hardened, and regression-protected: full pipeline (upload → Sharp → extraction → deterministic pricing → evidence-backed UI), per-IP rate limiting, `/health`, security headers, safe metrics/logging, and 125 deterministic tests.
+- The pipeline regression suite freezes the three canonical end-to-end payloads and guarantees the public example cache equals the live pipeline output.
+- The adversarial suite guarantees hostile model output can never produce an exception, NaN, Infinity, or an invented number — only honest results, blockers, or rejections.
 
 Validation:
 
-- `pnpm validate`: passed (typecheck, lint zero-warnings, format, 99 tests, production build with the new `/health` route).
-- Manual production-runtime verification: health payload, all security headers including CSP, the 400/400/429+`Retry-After` sequence per IP, per-IP independence, metrics counters, and clean structured logs (see Validation evidence).
+- `pnpm validate`: passed (typecheck, lint zero-warnings, format, 125 tests, production build).
 
-Important context for Phase 7 (tests, fixtures, and minimum evaluation):
+Important context for Phase 8 (launch and portfolio):
 
-- The required scope is the regression suite; Playwright and the 15–20 screenshot evaluation set are stretch goals only.
-- 99 deterministic tests already cover schema, mapper, engine, orchestration, routes, presentation, theme invariance, and hardening. Phase 7 should focus on gaps: end-to-end fixture regressions across the full pipeline (raw fixture → presentation payload), adversarial/malformed extraction cases, and any uncovered UI states — not on re-testing what exists.
-- Everything is deterministic by policy: no test may call the live API. The live checks already performed are recorded in Validation evidence.
-- Reset helpers exist for singletons (`resetAnalyzeRateLimiterForTests`, `resetAnalysisMetricsForTests`); route tests can drive rate limiting via `RATE_LIMIT_*` env vars plus `resetAnalyzeRateLimiterForTests()`.
-- Vitest isolates test files per worker, so module-level singletons (limiter, metrics) do not leak between files.
-
-Other context:
-
-- The Railway deploy itself is Phase 8; `next start` already honors the injected `PORT`, and `/health` is ready to be configured as the health-check path.
-- The browser skill package is unavailable in this environment; a human desktop/mobile visual pass remains recommended before launch.
-- Anthropic rejects schemas with too many union/array parameters. Keep the commitment object and fee-frequency enum union-free unless a live schema check proves an alternative valid.
+- Railway deploy: single persistent Node process, `next start` honors the injected `PORT`, configure `/health` as the health-check path. Environment variables are documented in `docs/production-hardening.md` (`ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL`, `RATE_LIMIT_MAX_REQUESTS`, `RATE_LIMIT_WINDOW_SECONDS`).
+- The in-memory rate limit resets on deploy and is per-process by design; do not scale horizontally without revisiting the closed Railway decision.
+- After the first deploy, run one live smoke check: the three examples (must never call Anthropic), one real upload end to end, `/health`, and the security headers (the CSP applies in production builds only).
+- Documentation policy: README, architecture docs, and Contra copy in English; the LinkedIn draft in Spanish.
+- A human desktop/mobile visual pass remains recommended before publishing (the browser skill package was unavailable in every phase).
 
 Next recommended phase:
 
-- Phase 7 — Tests, fixtures, and minimum evaluation.
+- Phase 8 — Launch and portfolio.
 
-Do not start Phase 7 automatically.
+Do not start Phase 8 automatically.
 
 ## Deferred ideas
 
