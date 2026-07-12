@@ -2,7 +2,7 @@
 
 ## Current phase
 
-Phase 7 — Tests, fixtures, and minimum evaluation (`COMPLETED`, Claude Code / Claude Fable 5). Scope was reduced by owner decision to the critical regression coverage: pure-pipeline fixture regression plus an adversarial model-output table; no Playwright, no browser E2E, no separate evaluation document. No later phase is active. Phase 8 remains `NOT_STARTED`.
+Phase 8 — Launch and portfolio (`IN_PROGRESS`, Claude Code / Claude Fable 5). Started with the public-asset gap reported by the owner: favicon and portfolio/social images. The Railway deploy and portfolio copy remain pending within this phase.
 
 ## Current objective
 
@@ -32,7 +32,7 @@ Completed: the critical regression coverage exists — (1) full pure-pipeline re
 |     5 | Results, evidence, and uncertainty states       | COMPLETED   | Codex GPT-5.6 SOL | Per-fact evidence, honest absence, four analysis result states    |
 |     6 | Production hardening                            | COMPLETED   | Claude Fable 5    | IP limits, /health, deadline, headers, metrics, verified runtime  |
 |     7 | Tests, fixtures, and minimum evaluation         | COMPLETED   | Claude Fable 5    | Pipeline regression + adversarial table; Playwright/eval cut      |
-|     8 | Launch and portfolio                            | NOT_STARTED | —                 | Railway deploy, public assets, README, Contra EN, LinkedIn ES     |
+|     8 | Launch and portfolio                            | IN_PROGRESS | Claude Fable 5    | Railway deploy, public assets, README, Contra EN, LinkedIn ES     |
 
 ## Completed work
 
@@ -107,14 +107,19 @@ Completed: the critical regression coverage exists — (1) full pure-pipeline re
 - Added `docs/production-hardening.md`, updated `.env.example` and `README.md`, and added 22 hardening tests (limiter, config parsing, client IP, metrics, headers, and route-level 429/health integration); the suite now has 99 tests.
 - Added `src/tests/integration/pipeline-regression.test.ts`: the three verified raw fixtures run through the real schema → mapper → engine → presentation pipeline and are asserted against hand-verified payloads (states, timelines with verbatim evidence, $155.88/$120.00/$220.89 totals, effective monthlies, displayed-equivalent separation, derived due-today, explicit absence, convention assumptions), plus a consistency guarantee that `getVerifiedExample(id)` deep-equals the live pipeline output for each fixture.
 - Added `src/tests/unit/adversarial-model-output.test.ts`: a deterministic table of hostile-but-structurally-valid model outputs (13-digit and over-precise decimals, exponent/hex/locale formats, zero/negative/over-cap periods, mixed currencies, implausible phase order, amount-less fees, smuggled commitment values, markup-like evidence, 50 duplicated ambiguities, empty screenshots, maximum-magnitude money) with one invariant: the pipeline ends in an honest schema-valid response or an explicit rejection — never an exception, NaN, Infinity, or invented number. The suite now has 125 tests.
+- Added the favicon set from the brand mark (`src/app/icon.svg` hand-drawn, plus `icon.png` 48 px and `apple-icon.png` 180 px generated with sharp); Next serves all three automatically.
+- Added the 1200×630 social image `public/og.png` (brand mark, tagline, FitClub+ evidence chips) and wired full Open Graph/Twitter metadata in `src/app/layout.tsx`; `metadataBase` reads `NEXT_PUBLIC_APP_URL` (set at deploy) with a localhost fallback.
+- Captured four real portfolio screenshots into `docs/portfolio/` with headless Chrome CDP against the production build: desktop hero dark and light, mobile hero dark, and the FitClub+ verified-example result panel (dark, header hidden for composition). All at 2× device scale.
 
 ## Work in progress
 
-- None. Phase 5 is complete; Phase 6 has not started.
+- Phase 8 public assets are done: favicon set, social/OG image, social metadata, and four real portfolio screenshots.
 
 ## Remaining tasks for current phase
 
-- None.
+- Railway deploy: create the service, set `ANTHROPIC_API_KEY` (+ optional `ANTHROPIC_MODEL`, `RATE_LIMIT_*`), set `NEXT_PUBLIC_APP_URL` to the public URL so `og:image` resolves absolutely, configure `/health` as the health-check path, and run the live smoke check (three examples, one real upload, headers).
+- Portfolio copy: README final pass, Contra copy in English, LinkedIn draft in Spanish.
+- Recommended human desktop/mobile visual pass before publishing.
 
 ## Decisions made
 

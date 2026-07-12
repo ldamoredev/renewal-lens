@@ -5,10 +5,38 @@ import "@fontsource-variable/space-grotesk";
 
 import "./globals.css";
 
+const TITLE = "RenewalLens — See what you will actually pay";
+const DESCRIPTION =
+  "Upload a pricing screenshot and turn visible billing terms into a clear, evidence-backed timeline.";
+
 export const metadata: Metadata = {
-  title: "RenewalLens — See what you will actually pay",
-  description:
-    "Upload a pricing screenshot and turn visible billing terms into a clear, evidence-backed timeline.",
+  // Phase 8 deploy sets NEXT_PUBLIC_APP_URL to the public Railway URL so
+  // social images resolve absolutely.
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  ),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    type: "website",
+    siteName: "RenewalLens",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "RenewalLens — turn a pricing screenshot into an evidence-backed billing timeline",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/og.png"],
+  },
 };
 
 const themeScript = `
