@@ -8,7 +8,9 @@ The project is being built in nine deliberately bounded phases over a two-day MV
 
 ## Current state
 
-Phases 0 through 5 are complete. Visitor uploads follow a transient server pipeline: validated PNG/JPEG/WebP input, Sharp resize to a 1,568 px long side, Anthropic extraction, deterministic pricing, and an evidence-backed UI response. Each displayed billing fact can expose its textual evidence; missing and ambiguous terms remain explicit. The three examples are served from verified local extraction fixtures and never call Anthropic. No screenshot is persisted or logged.
+Phases 0 through 6 are complete. Visitor uploads follow a transient server pipeline: validated PNG/JPEG/WebP input, Sharp resize to a 1,568 px long side, Anthropic extraction, deterministic pricing, and an evidence-backed UI response. Each displayed billing fact can expose its textual evidence; missing and ambiguous terms remain explicit. The three examples are served from verified local extraction fixtures and never call Anthropic. No screenshot is persisted or logged.
+
+The app is production-hardened for the single-process Railway runtime: in-memory per-IP rate limiting on `POST /api/analyze` (with `Retry-After`), a 60 s route deadline, `GET /health` with safe operational metrics, structured safe-metadata logging, and security headers including a self-contained production CSP. See [`docs/production-hardening.md`](./docs/production-hardening.md).
 
 The three built-in examples are fictional and deterministic:
 

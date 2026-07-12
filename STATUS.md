@@ -2,15 +2,15 @@
 
 ## Current phase
 
-Phase 5 — Results, evidence, and uncertainty states (`COMPLETED`, Codex GPT-5.6 SOL). Phase 6 has not started.
+Phase 6 — Production hardening (`COMPLETED`, Claude Code / Claude Fable 5). No later phase is active. Phase 7 remains `NOT_STARTED`.
 
 ## Current objective
 
-Completed the evidence-backed result experience: billing timeline, per-fact citations, calculated totals, missing information, ambiguity handling, and insufficient-screenshot guidance.
+Completed: the app is hardened for the single-process Railway runtime — in-memory per-IP rate limiting on `POST /api/analyze` with `Retry-After`, `GET /health` with safe operational metrics, a 60 s overall route deadline, security headers with a production-only self-contained CSP, structured safe-metadata logging, and environment-variable configuration with safe defaults. All behaviors were verified against a real production build.
 
 ## Overall progress
 
-6 of 9 phases are complete. Phase 5 passed deterministic tests, production build, and live Anthropic contract verification.
+7 of 9 phases are complete. The product pipeline is feature-complete and production-hardened; the remaining work is the Phase 7 regression suite and the Phase 8 launch.
 
 ### Two-day time budget
 
@@ -30,7 +30,7 @@ Completed the evidence-backed result experience: billing timeline, per-fact cita
 |     3 | Deterministic pricing engine                    | COMPLETED   | Claude Fable 5    | Pure 365-day engine, twelfth-day timeline, blockers, 17 new tests |
 |     4 | Real upload flow and example fixture cache      | COMPLETED   | Codex GPT-5.6 SOL | Upload, cached examples, live verification, and UI contrast pass  |
 |     5 | Results, evidence, and uncertainty states       | COMPLETED   | Codex GPT-5.6 SOL | Per-fact evidence, honest absence, four analysis result states    |
-|     6 | Production hardening                            | NOT_STARTED | —                 | In-memory IP limits, timeouts, privacy, metrics, Railway runtime  |
+|     6 | Production hardening                            | COMPLETED   | Claude Fable 5    | IP limits, /health, deadline, headers, metrics, verified runtime  |
 |     7 | Tests, fixtures, and minimum evaluation         | NOT_STARTED | —                 | Required regression suite; Playwright/eval set are stretch only   |
 |     8 | Launch and portfolio                            | NOT_STARTED | —                 | Railway deploy, public assets, README, Contra EN, LinkedIn ES     |
 
@@ -98,6 +98,13 @@ Completed the evidence-backed result experience: billing timeline, per-fact cita
 - Extended the deterministic engine so visible one-time and recurring fees enter the first-year schedule; an additional fee with no visible amount blocks the total instead of being ignored.
 - Added `docs/result-presentation.md` and updated architecture, extraction, pricing, and README documentation.
 - Added 10 Phase 5 regression tests for evidence rendering, insufficient and ambiguous outcomes, commitment/fee mapping, fee calculations, live-schema structure, and richer fixture responses; the suite now has 77 tests.
+- Added the in-memory fixed-window per-IP rate limiter (`src/lib/rate-limit/`): defaults 10 requests per 3600 s, env-overridable (`RATE_LIMIT_MAX_REQUESTS`, `RATE_LIMIT_WINDOW_SECONDS`) with fallback-to-default parsing, bounded to 10,000 tracked keys with expired sweeps and oldest-key eviction.
+- Wired the limiter into `POST /api/analyze` before any body parsing, keyed by the first `x-forwarded-for` hop (Railway proxy) with `x-real-ip` and shared `"unknown"` fallbacks; blocked requests return the existing `rate_limited` state plus a `Retry-After` header.
+- Added `GET /health` (uncached) returning status, uptime, and the safe in-memory analysis metrics snapshot (request count, per-outcome counters, duration aggregates — labels and numbers only).
+- Added the analysis metrics registry (`src/lib/metrics/analysis-metrics.ts`) and one structured safe-metadata log line per analysis request (`event`, `outcome`, `status`, `durationMs` — never IPs, filenames, image bytes, extracted text, or model payloads).
+- Added a 60 s overall route deadline around transform + extraction that returns the existing `timeout` state (HTTP 504) instead of holding the connection.
+- Added security headers to every route via `next.config.ts` + `src/lib/http/security-headers.ts`: nosniff, DENY framing, strict referrer policy, restrictive permissions policy, HSTS, and a production-only fully self-contained CSP.
+- Added `docs/production-hardening.md`, updated `.env.example` and `README.md`, and added 22 hardening tests (limiter, config parsing, client IP, metrics, headers, and route-level 429/health integration); the suite now has 99 tests.
 
 ## Work in progress
 
@@ -150,10 +157,18 @@ Completed the evidence-backed result experience: billing timeline, per-fact cita
 - No extracted billing phases maps to `insufficient`, distinct from technical failure and from a partial but useful extraction.
 - Additional fees with `one_time` frequency are scheduled once at signup; recurring fees follow their visible frequency. A fee with unknown amount blocks first-year cost.
 - Anthropic's structured-output union budget is protected by a union-free minimum-commitment visibility object and fee-frequency enum; the public domain still exposes absence as `null`.
+- Rate limiting applies only to `POST /api/analyze` (the endpoint that spends money); the immutable example route stays unlimited. The limiter runs before body parsing so oversized uploads cannot bypass it.
+- Client IPs are used only as in-memory rate-limit keys and are never logged or persisted; logs and `/health` metrics carry outcome labels, counts, and durations only.
+- Malformed rate-limit environment values fall back to safe defaults instead of failing boot.
+- The CSP is production-only (dev needs eval for fast refresh) and fully self-contained: no external origin is allowed anywhere; inline script/style stay allowed because Next.js hydration and the theme pre-paint script require them.
+- `/health` exposes the metrics snapshot publicly; this is safe by construction because the registry cannot contain request-derived content.
+- The route deadline (60 s) responds with `timeout` rather than aborting the upstream call; the Anthropic client's own 45 s timeout remains the inner bound.
 
 ## Known issues
 
 - The Browser skill package remained absent during Phases 1 and 5, so responsive behavior was verified through common CSS breakpoints, server-rendered component tests, and the user's visual checks rather than automated screenshots. A final human desktop/mobile pass remains recommended.
+- The in-memory rate limit resets on every deploy/restart and is per-process by design (single Railway process); horizontal scaling would require revisiting the closed Railway decision.
+- The 60 s route deadline responds early but does not cancel the in-flight Anthropic request; the SDK timeout bounds the leaked work at 45 s per attempt.
 
 ## Blockers
 
@@ -161,78 +176,73 @@ Completed the evidence-backed result experience: billing timeline, per-fact cita
 
 ## Validation evidence
 
-- `pnpm validate`: passed end to end on 2026-07-12 (after Phase 3).
-- `pnpm validate`: passed end to end after Phase 4 implementation: typecheck, lint with zero warnings, formatting, 66 tests in 9 files, and production build.
-- Production build routes: static `/`; dynamic `/api/analyze` and `/api/examples/[id]`.
-- Manual localhost fixture checks: Streamly, CloudVault, and FitClub+ each returned HTTP 200 with `$155.88`, `$120.00`, and `$220.89` respectively.
-- Manual invalid upload returned HTTP 400 with `invalid_file`.
-- Manual multipart upload of the supplied PNG passed validation/Sharp processing and returned the expected HTTP 503 `service_unavailable` because no API key was configured.
-- Independent live Northstar Cinema upload returned a high-confidence extraction and the correct deterministic $179.88 first-year total.
-- Live example comparison returned Streamly $155.88, CloudVault $120.00, and FitClub+ $220.89, matching the versioned fixtures exactly.
-- Final `pnpm validate`: passed with typecheck, lint zero-warnings, formatting, 67 tests in 9 files, and production build.
-- Phase 5 focused suites: 55 tests passed across schema, pricing, orchestration, and result components during implementation.
-- Phase 5 live schema audit: the first revision exceeded Anthropic's union limit and returned controlled HTTP 400/503; the schema was reduced without data loss, regression-protected, and retested.
-- Final live Streamly upload with contract `2026-07-12.2`: `success`, `$155.88`, 3 timeline facts, 6 detail facts, 3 explicit missing-information items, and 0 ambiguities.
-- Final quality gate: typecheck, lint zero-warnings, formatting, and 77 tests in 9 files passed. The sandboxed build hit an environment-only Turbopack `EPERM` while opening an internal port; `pnpm build` rerun with the required permission passed and produced `/`, `/api/analyze`, and `/api/examples/[id]`.
+- `pnpm validate`: passed end to end after Phase 6 on 2026-07-12.
+  - TypeScript: passed.
+  - ESLint with zero warnings: passed.
+  - Prettier check: passed.
+  - Vitest: 99 tests passed in 14 files (77 from Phases 1–5 + 22 new hardening tests).
+  - Next.js production build: passed; routes `/`, `/_not-found`, `/api/analyze`, `/api/examples/[id]`, `/health`.
+- Manual production-runtime check (`pnpm start`, `NODE_ENV=production`, `PORT=3411`, `RATE_LIMIT_MAX_REQUESTS=2`, no API key):
+  - `GET /health` returned `status: ok` with uptime and an empty metrics snapshot, `Cache-Control: no-store`.
+  - `GET /` returned 200 with all security headers including the self-contained CSP.
+  - Three analyze POSTs from one forwarded IP returned 400, 400, then 429 with `Retry-After: 3600`; a different IP still received 400.
+  - `GET /health` afterwards reported `requests: 5`, `outcomes: { invalid_file: 3, rate_limited: 2 }` and contained no IPs.
+  - Server log showed only structured `analyze_request` lines with outcome/status/duration.
 
 ## Files changed in the current phase
 
+- `.env.example`
 - `README.md`
 - `STATUS.md`
-- `docs/architecture.md`
-- `docs/extraction-contract.md`
-- `docs/pricing-engine.md`
-- `docs/result-presentation.md` (new)
-- `src/app/globals.css`
-- `src/components/evidence/evidence-disclosure.tsx` (new)
-- `src/components/home/renewal-lens-app.tsx`
-- `src/components/pricing-result/pricing-result.tsx`
-- `src/components/states/analysis-state.tsx`
-- `src/features/analyze-offer/application/analysis-response.ts`
-- `src/features/analyze-offer/domain/extraction.ts`
-- `src/features/analyze-offer/domain/pricing.ts`
-- `src/features/analyze-offer/infrastructure/extraction-prompt.ts`
-- `src/features/analyze-offer/infrastructure/fixtures/*.raw.json`
-- `src/features/analyze-offer/presentation/mock-offers.ts`
-- `src/features/analyze-offer/schemas/offer-extraction.ts`
-- `src/tests/integration/analysis-routes.test.ts`
-- `src/tests/integration/anthropic-offer-extractor.test.ts`
-- `src/tests/unit/analyze-screenshot.test.ts`
-- `src/tests/unit/offer-extraction-schema.test.ts`
-- `src/tests/unit/pricing-engine.test.ts`
-- `src/tests/unit/pricing-result.test.tsx`
-- `src/tests/unit/verified-examples.test.ts`
+- `docs/production-hardening.md` (new)
+- `next.config.ts`
+- `src/app/api/analyze/route.ts`
+- `src/app/health/route.ts` (new)
+- `src/lib/http/client-ip.ts` (new)
+- `src/lib/http/security-headers.ts` (new)
+- `src/lib/metrics/analysis-metrics.ts` (new)
+- `src/lib/rate-limit/analyze-rate-limiter.ts` (new)
+- `src/lib/rate-limit/ip-rate-limiter.ts` (new)
+- `src/tests/integration/production-hardening.test.ts` (new)
+- `src/tests/unit/analysis-metrics.test.ts` (new)
+- `src/tests/unit/client-ip.test.ts` (new)
+- `src/tests/unit/ip-rate-limiter.test.ts` (new)
+- `src/tests/unit/security-headers.test.ts` (new)
 
 ## Handoff for the next agent
 
 Completed:
 
-- Phase 5 now presents the full billing timeline, first-year total, effective monthly cost, actual cadence, displayed equivalents, renewal, minimum commitment, cancellation, additional fees, missing information, ambiguities, and calculation notes.
-- Every displayed fact has its own evidence disclosure. Calculated facts reference the visible charge evidence used by TypeScript.
-- The extraction contract is `2026-07-12.2`; minimum commitment and additional fees are supported without changing the rule that absent information stays absent.
-- The deterministic engine includes visible additional fees and abstains when a fee amount is missing.
-- Complete, partial, ambiguous, and insufficient-screenshot states are distinct from technical errors and rate limiting.
-- 77 deterministic tests pass.
+- The full product pipeline works and is production-hardened: `validated upload → transient Sharp transform → ScreenshotInput → OfferFactsExtractor → computeOfferPricing → AnalysisApiResponse → UI`, now guarded by per-IP rate limiting, a 60 s route deadline, security headers, `GET /health`, safe metrics, and structured safe-metadata logging.
+- Rate limiting: in-memory fixed window, 10 requests/hour/IP by default, env-overridable, checked before body parsing, `Retry-After` on 429, bounded memory. IPs are never logged or persisted.
+- `GET /health` is the Railway health-check path and exposes only outcome counters and durations.
+- Security headers apply to every route; the production build adds a fully self-contained CSP (verified against the real production server).
+- 99 deterministic tests pass.
 
 Validation:
 
-- Typecheck, lint zero-warnings, formatting, and 77 tests passed.
-- `pnpm build`: passed outside the filesystem sandbox after the sandbox blocked Turbopack's internal port with `EPERM`.
-- Live Streamly extraction passed against the updated Anthropic structured-output schema and returned the expected `$155.88` result with the richer presentation payload.
+- `pnpm validate`: passed (typecheck, lint zero-warnings, format, 99 tests, production build with the new `/health` route).
+- Manual production-runtime verification: health payload, all security headers including CSP, the 400/400/429+`Retry-After` sequence per IP, per-IP independence, metrics counters, and clean structured logs (see Validation evidence).
 
-Important context:
+Important context for Phase 7 (tests, fixtures, and minimum evaluation):
 
-- The implemented pipeline is `validated upload → transient Sharp transform → ScreenshotInput → OfferFactsExtractor → computeOfferPricing → AnalysisApiResponse → UI`.
-- Public example selection uses only `GET /api/examples/[id]`; it cannot construct an Anthropic client and is immutable-cacheable.
-- `POST /api/analyze` degrades to a clear `503 service_unavailable` without a key instead of crashing or persisting the upload.
-- Anthropic rejects schemas with too many union/array parameters. Keep the Phase 5 commitment object and fee-frequency enum union-free unless a live schema check proves an alternative valid.
+- The required scope is the regression suite; Playwright and the 15–20 screenshot evaluation set are stretch goals only.
+- 99 deterministic tests already cover schema, mapper, engine, orchestration, routes, presentation, theme invariance, and hardening. Phase 7 should focus on gaps: end-to-end fixture regressions across the full pipeline (raw fixture → presentation payload), adversarial/malformed extraction cases, and any uncovered UI states — not on re-testing what exists.
+- Everything is deterministic by policy: no test may call the live API. The live checks already performed are recorded in Validation evidence.
+- Reset helpers exist for singletons (`resetAnalyzeRateLimiterForTests`, `resetAnalysisMetricsForTests`); route tests can drive rate limiting via `RATE_LIMIT_*` env vars plus `resetAnalyzeRateLimiterForTests()`.
+- Vitest isolates test files per worker, so module-level singletons (limiter, metrics) do not leak between files.
+
+Other context:
+
+- The Railway deploy itself is Phase 8; `next start` already honors the injected `PORT`, and `/health` is ready to be configured as the health-check path.
 - The browser skill package is unavailable in this environment; a human desktop/mobile visual pass remains recommended before launch.
+- Anthropic rejects schemas with too many union/array parameters. Keep the commitment object and fee-frequency enum union-free unless a live schema check proves an alternative valid.
 
 Next recommended phase:
 
-- Phase 6 — Production hardening.
+- Phase 7 — Tests, fixtures, and minimum evaluation.
 
-Do not start Phase 6 automatically.
+Do not start Phase 7 automatically.
 
 ## Deferred ideas
 
