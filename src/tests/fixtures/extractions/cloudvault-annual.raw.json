@@ -1,0 +1,36 @@
+{
+  "merchant": { "name": "CloudVault", "evidence": "CloudVault Pro" },
+  "currency": {
+    "code": null,
+    "symbol": "$",
+    "evidence": "$120 billed annually"
+  },
+  "dueToday": null,
+  "billingPhases": [
+    {
+      "kind": "regular",
+      "price": {
+        "decimalText": "120",
+        "currencyCode": null,
+        "evidence": "$120 billed annually"
+      },
+      "billingPeriod": { "value": 1, "unit": "year" },
+      "duration": null,
+      "evidence": "$120 billed annually"
+    }
+  ],
+  "displayedEquivalentPrice": {
+    "amount": {
+      "decimalText": "10",
+      "currencyCode": null,
+      "evidence": "$10 / month"
+    },
+    "period": { "value": 1, "unit": "month" }
+  },
+  "autoRenewal": {
+    "status": "yes",
+    "evidence": "Plan renews annually until cancelled."
+  },
+  "cancellation": null,
+  "ambiguities": []
+}

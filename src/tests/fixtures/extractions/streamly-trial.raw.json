@@ -1,0 +1,39 @@
+{
+  "merchant": { "name": "Streamly", "evidence": "STREAMLY PLUS" },
+  "currency": { "code": null, "symbol": "$", "evidence": "$12.99 / month" },
+  "dueToday": {
+    "decimalText": "0.00",
+    "currencyCode": null,
+    "evidence": "Due today $0.00"
+  },
+  "billingPhases": [
+    {
+      "kind": "free_trial",
+      "price": null,
+      "billingPeriod": null,
+      "duration": { "value": 7, "unit": "day" },
+      "evidence": "Watch free for 7 days"
+    },
+    {
+      "kind": "regular",
+      "price": {
+        "decimalText": "12.99",
+        "currencyCode": null,
+        "evidence": "$12.99 / month"
+      },
+      "billingPeriod": { "value": 1, "unit": "month" },
+      "duration": null,
+      "evidence": "After your free trial $12.99 / month"
+    }
+  ],
+  "displayedEquivalentPrice": null,
+  "autoRenewal": {
+    "status": "yes",
+    "evidence": "Renews automatically each month."
+  },
+  "cancellation": {
+    "text": "Cancel anytime before renewal.",
+    "evidence": "Cancel anytime before renewal."
+  },
+  "ambiguities": []
+}

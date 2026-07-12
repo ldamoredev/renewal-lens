@@ -1,0 +1,40 @@
+{
+  "merchant": { "name": "FitClub+", "evidence": "FITCLUB+" },
+  "currency": { "code": null, "symbol": "$", "evidence": "$19.99 / month" },
+  "dueToday": {
+    "decimalText": "1.00",
+    "currencyCode": null,
+    "evidence": "Due today $1.00"
+  },
+  "billingPhases": [
+    {
+      "kind": "promotional",
+      "price": {
+        "decimalText": "1.00",
+        "currencyCode": null,
+        "evidence": "Your first month. Just $1."
+      },
+      "billingPeriod": { "value": 1, "unit": "month" },
+      "duration": { "value": 1, "unit": "month" },
+      "evidence": "LIMITED INTRO OFFER Your first month. Just $1."
+    },
+    {
+      "kind": "regular",
+      "price": {
+        "decimalText": "19.99",
+        "currencyCode": null,
+        "evidence": "$19.99 / month"
+      },
+      "billingPeriod": { "value": 1, "unit": "month" },
+      "duration": null,
+      "evidence": "Then, after 1 month $19.99 / month"
+    }
+  ],
+  "displayedEquivalentPrice": null,
+  "autoRenewal": { "status": "yes", "evidence": "Auto-renews monthly." },
+  "cancellation": {
+    "text": "Cancel before the next billing date.",
+    "evidence": "Cancel before the next billing date."
+  },
+  "ambiguities": []
+}
