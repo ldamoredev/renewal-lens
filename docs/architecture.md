@@ -25,11 +25,11 @@ The distinction between an advertised monthly equivalent and an actual charge is
 
 ## First-year convention
 
-This closed product decision will be implemented and tested in Phase 3:
+This closed product decision is implemented and tested in the Phase 3 engine (see `docs/pricing-engine.md`):
 
 > First-year cost is the sum of all charges whose charge date falls within the 365 days after signup, assuming signup today.
 
-Consequences include 12 monthly charges after a seven-day free trial, and one $1 promotional charge plus 11 $19.99 regular charges for a $220.89 first-year total. Every calculated result must record this convention in `assumptions[]`.
+Consequences include 12 monthly charges after a seven-day free trial, and one $1 promotional charge plus 11 $19.99 regular charges for a $220.89 first-year total. Every calculated result records this convention in `assumptions[]`.
 
 ## Examples
 

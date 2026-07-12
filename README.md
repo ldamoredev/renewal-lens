@@ -8,7 +8,7 @@ The project is being built in nine deliberately bounded phases over a two-day MV
 
 ## Current state
 
-Phases 0 and 1 are complete. The responsive product experience, fictional example screenshots, mock analysis flow, uncertainty states, and visual system are ready. Phase 2 — the Anthropic extraction contract — is recommended next but remains unstarted. The current interface uses presentation fixtures only; no live model call or pricing engine exists yet.
+Phases 0 through 3 are complete. The responsive product experience, fictional example screenshots, mock analysis flow, uncertainty states, and dual-theme glass visual system are ready. The Anthropic extraction contract exists (versioned domain types with textual evidence, a strict Zod boundary, deterministic minor-unit money conversion, and a server-side adapter with one controlled structural retry — see [`docs/extraction-contract.md`](./docs/extraction-contract.md)), and the pure pricing engine now computes due today, the 365-day first-year cost, the charge schedule, and the half-up effective monthly cost with integer arithmetic only, abstaining with machine-readable blockers when data is missing (see [`docs/pricing-engine.md`](./docs/pricing-engine.md)). The UI still uses presentation fixtures only; wiring extraction and pricing into the real upload flow is Phase 4.
 
 The three built-in examples are fictional and deterministic:
 
@@ -59,6 +59,8 @@ Presentation model
 Money uses integer minor units. Missing information remains absent, ambiguous evidence remains ambiguous, and extracted facts retain textual evidence wherever possible. Preloaded examples use verified local fixtures and never make live API calls.
 
 See [`docs/architecture.md`](./docs/architecture.md) for boundaries, deployment decisions, privacy constraints, and the first-year cost convention reserved for Phase 3.
+
+See [`docs/design-system.md`](./docs/design-system.md) for theme tokens, typography, glass rules, and toggle behavior.
 
 ## Deployment direction
 
